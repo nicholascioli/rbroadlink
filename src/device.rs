@@ -11,6 +11,8 @@ use std::{
 use packed_struct::prelude::{ PackedStruct, PackedStructSlice };
 
 use crate::{
+    REMOTE_CODES,
+
     DeviceInfo,
     RemoteDevice,
 
@@ -206,7 +208,7 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
 
     // Create the device conditionally based on the model code.
     let mut device = match &response.model_code {
-        0x6026 | 0x6184 | 0x61A2 | 0x649B | 0x653C => Device::Remote {
+        _ if REMOTE_CODES.contains_key(&response.model_code) => Device::Remote {
             device: RemoteDevice::new(name, addr_ip, response)
         },
         _ => return Err(format!("Unknown device: {}", response.model_code)),

@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-const REMOTE_CODES: phf::Map<u16, &'static str> = phf_map! {
+pub const REMOTE_CODES: phf::Map<u16, &'static str> = phf_map! {
     0x6026u16 => "RM4 Pro",
     0x6184u16 => "RMC4 Pro",
     0x61A2u16 => "RM4 Pro",
