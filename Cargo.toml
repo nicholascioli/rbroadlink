@@ -1,0 +1,32 @@
+[package]
+name = "rbroadlink"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Nicholas Cioli <nicholascioli@gmail.com>",
+    "Wyatt Lindquist <git.wquist@gmail.com>",
+]
+
+[lib]
+name = "rbroadlink"
+path = "src/lib.rs"
+
+[[example]]
+name = "rbroadlink-cli"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aes = "0.7.5"
+block-modes = "0.8.1"
+chrono = "0.4"
+get_if_addrs = "0.5.3"
+hex-literal = "0.3.4"
+packed_struct = "0.10"
+phf = { version = "0.10", features = ["macros"] }
+rand = "0.8.4"
+
+[dev-dependencies]
+clap = { version = "3.0.0-rc.9", features = ["derive"] }
+hex = "0.4.3"
+rpassword = "5.0"
