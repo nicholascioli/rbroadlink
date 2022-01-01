@@ -127,7 +127,7 @@ fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, mode: BlastModeArg, co
 
     // Ensure that the device is a remote
     let remote = match device {
-        Device::Remote { device } => device,
+        Device::Remote { remote } => remote,
         _ => return Err("Device specified is not a remote!".into()),
     };
 
@@ -174,7 +174,7 @@ fn learn(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code_type: LearnCodeTy
     // Ensure that the device is a remote
     let device = Device::from_ip(device_ip, local_ip).expect("Could not connect to device!");
     let remote = match device {
-        Device::Remote { device } => device,
+        Device::Remote { remote } => remote,
         _ => return Err("Device specified is not a remote!".into()),
     };
 
