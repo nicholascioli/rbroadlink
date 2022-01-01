@@ -38,7 +38,7 @@ let devices = Device::list(Some(local_ip))
 ```
 
 Once you have a valid device, you probably want to differentiate the kind of device
-that you have. `Device` is an structured enum that contains different types of devices with
+that you have. `Device` is a structured enum that contains different types of devices with
 more specialized methods.
 
 ```rust
