@@ -51,9 +51,9 @@ let remote_device = match device {
 };
 
 // Use a remote-specific method to echo a learned code.
-let code = remote.learn_ir()
+let code = remote_device.learn_ir()
     .expect("Could not learn code!");
-remote.send_ir(&code)
+remote_device.send_ir(&code)
     .expect("Could not send code!");
 ```
 
@@ -68,7 +68,7 @@ Nicholas Cioli <nicholascioli@gmail.com>, Wyatt Lindquist <git.wquist@gmail.com>
 Command line arguments for the CLI
 
 USAGE:
-    rbroadlink-cli.exe <SUBCOMMAND>
+    rbroadlink-cli <SUBCOMMAND>
 
 OPTIONS:
     -h, --help       Print help information
@@ -82,4 +82,10 @@ SUBCOMMANDS:
     info       Get information about a broadlink device
     learn      Learn a code from a broadlink device on the network
     list       Lists available broadlink devices on the network
+```
+
+You can run the client from this source by running the following:
+
+```sh
+cargo run --example rbroadlink-cli --release -- <OPTIONS GO HERE>
 ```
