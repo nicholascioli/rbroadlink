@@ -99,7 +99,7 @@ impl RemoteDevice {
     pub fn send_code(&self, payload: &[u8], command: RemoteDataCommand) -> Result<Vec<u8>, String> {
         // We cast this object to a generic device in order to make use of the shared
         // helper utilities.
-        let generic_device = Device::Remote{ device: self.clone() };
+        let generic_device = Device::Remote{ remote: self.clone() };
 
         // Construct the data message
         let msg = RemoteDataMessage::new(command);

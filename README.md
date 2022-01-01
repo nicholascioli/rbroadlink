@@ -3,6 +3,60 @@
 A rust port of the [python-broadlink](https://github.com/mjg59/python-broadlink)
 library.
 
+## Devices Tested
+
+The following devices have been tested and found to work with this library:
+
+Model Code | Device Name | Manufacturer | Type
+-----------|-------------|--------------|-----
+0x649B | RM4 Pro | Broadlink | `Remote`
+
+## Usage
+
+Devices can either be constructed from a known IP or by local discovery:
+
+```rust
+use std::net::Ipv4Addr;
+use rbroadlink::Device;
+
+// Create a device by IP
+// Note: Devices only support Ipv4 addresses
+let known_ip = Ipv4Addr::new(1, 2, 3, 4);
+let device = Device::from_ip(known_ip, None)
+    .expect("Could not connect to device!");
+
+// You can also specify the local IP of the machine in the case of the device being
+// on a different subnet.
+let local_ip = Ipv4::new(9, 8, 7, 6);
+let device_with_local_ip = Device::from_ip(known_ip, Some(local_ip))
+    .expect("Could not connect to device!");
+
+// You can also just enumerate all of the discovered devices, with an optional
+// local ip as well.
+let devices = Device::list(Some(local_ip))
+    .expect("Could not enumerate devices!");
+```
+
+Once you have a valid device, you probably want to differentiate the kind of device
+that you have. `Device` is an structured enum that contains different types of devices with
+more specialized methods.
+
+```rust
+use rbroadlink::Device;
+
+// Assuming that you have a valid device in `device`...
+let remote_device = match device {
+    Device::Remote { remote } => remote,
+    _ => return Err("Not a remote!"),
+};
+
+// Use a remote-specific method to echo a learned code.
+let code = remote.learn_ir()
+    .expect("Could not learn code!");
+remote.send_ir(&code)
+    .expect("Could not send code!");
+```
+
 ## Client
 
 This library includes an example client for communicating with broadlink devices.

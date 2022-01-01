@@ -40,7 +40,7 @@ use crate::{
 
 /// A braodlink device.
 pub enum Device {
-    Remote { device: RemoteDevice },
+    Remote { remote: RemoteDevice },
 }
 
 /// Represents a generic device. See the different implementations for more specific info.
@@ -153,16 +153,16 @@ impl DeviceTrait for Device {
     /// Get the core information about a device.
     fn get_info(&self) -> DeviceInfo {
         return match self {
-            Device::Remote { device } => device.info.clone(),
+            Device::Remote { remote } => remote.info.clone(),
         };
     }
 
     /// Save the authentication information
     fn save_auth_pair(&mut self, id: u32, key: [u8; 16]) {
         return match self {
-            Device::Remote { device } => {
-                device.info.auth_id = id;
-                device.info.key = key;
+            Device::Remote { remote } => {
+                remote.info.auth_id = id;
+                remote.info.key = key;
             },
         };
     }
@@ -209,7 +209,7 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     // Create the device conditionally based on the model code.
     let mut device = match &response.model_code {
         _ if REMOTE_CODES.contains_key(&response.model_code) => Device::Remote {
-            device: RemoteDevice::new(name, addr_ip, response)
+            remote: RemoteDevice::new(name, addr_ip, response)
         },
         _ => return Err(format!("Unknown device: {}", response.model_code)),
     };
