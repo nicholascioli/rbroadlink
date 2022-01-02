@@ -1,6 +1,6 @@
 [package]
 name = "rbroadlink"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 description = "A library to control broadlink smart devices."
@@ -19,6 +19,9 @@ path = "src/lib.rs"
 [[example]]
 name = "rbroadlink-cli"
 
+[[example]]
+name = "mqtt-broadlink"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -33,5 +36,9 @@ rand = "0.8.4"
 
 [dev-dependencies]
 clap = { version = "3.0.0", features = ["derive"] }
+env_logger = "0.9.0"
 hex = "0.4.3"
+log = "0.4.14"
+mqtt-async-client = "0.3.1"
 rpassword = "5.0"
+tokio = {version = "1.15.0", features = ["full"] }

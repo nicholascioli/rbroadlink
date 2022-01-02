@@ -88,35 +88,7 @@ remote_device.send_code(&code)
     .expect("Could not send code!");
 ```
 
-## Client
+## Examples
 
-This library includes an example client for communicating with broadlink devices.
-The source for it is in `examples/rbroardlink-cli` and its usage is shown below:
-
-```sh
-rbroadlink 0.1.0
-Nicholas Cioli <nicholascioli@gmail.com>, Wyatt Lindquist <git.wquist@gmail.com>
-A library to control broadlink smart devices.
-
-USAGE:
-    rbroadlink-cli <SUBCOMMAND>
-
-OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-SUBCOMMANDS:
-    blast      Blasts an IR / RF code to the world
-    connect    Connect a broadlink device to the network. Only tested on the RM3 Mini and the
-               RM4 Pro
-    help       Print this message or the help of the given subcommand(s)
-    info       Get information about a broadlink device
-    learn      Learn a code from a broadlink device on the network
-    list       Lists available broadlink devices on the network
-```
-
-You can run the client from this source by running the following:
-
-```sh
-cargo run --example rbroadlink-cli --release -- <OPTIONS GO HERE>
-```
+There are a few examples of this library present in the `examples` folder. Refer to
+the [examples folder README](examples/README.md) for more info.
