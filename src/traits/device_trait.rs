@@ -1,5 +1,6 @@
 use crate::DeviceInfo;
 
+/// Traits shared by generic devices.
 pub trait DeviceTrait {
     /// Get the core information about a device.
     fn get_info(&self) -> DeviceInfo;

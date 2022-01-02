@@ -11,6 +11,37 @@ Model Code | Device Name | Manufacturer | Type
 -----------|-------------|--------------|-----
 0x649B | RM4 Pro | Broadlink | `Remote`
 
+## Setup
+
+Before a device can be used, it must be connected to a network. Refer to [this link](https://github.com/mjg59/python-broadlink#setup)
+on how to get the device into AP mode, connect to its network (e.g. Broadlink_Device_Wifi), and
+then run the following code:
+
+```rust
+use rbroadlink::Device;
+use rbroadlink::network::WirelessConnection;
+
+// Construct the network information
+let network_info = WirelessConnection::WPA2(
+    "SSID Here",
+    "Password here",
+);
+
+// Connect the device to the specified network
+Device::connect_to_network(&network_info)
+    .expect("Could not connect the device to the network!");
+```
+
+You can also use the included cli to do so:
+
+```sh
+# Pass the password directly
+cargo run --example rbroadlink-cli -- connect wpa2 "SSID Here" "Password here"
+
+# Prompt for the password safely
+cargo run --example rbroadlink-cli -- connect -p wpa2 "SSID Here"
+```
+
 ## Usage
 
 Devices can either be constructed from a known IP or by local discovery:
@@ -50,10 +81,10 @@ let remote_device = match device {
     _ => return Err("Not a remote!"),
 };
 
-// Use a remote-specific method to echo a learned code.
+// Use a remote-specific method to echo a learned IR code.
 let code = remote_device.learn_ir()
-    .expect("Could not learn code!");
-remote_device.send_ir(&code)
+    .expect("Could not learn IR code!");
+remote_device.send_code(&code)
     .expect("Could not send code!");
 ```
 
@@ -65,7 +96,7 @@ The source for it is in `examples/rbroardlink-cli` and its usage is shown below:
 ```sh
 rbroadlink 0.1.0
 Nicholas Cioli <nicholascioli@gmail.com>, Wyatt Lindquist <git.wquist@gmail.com>
-Command line arguments for the CLI
+A library to control broadlink smart devices.
 
 USAGE:
     rbroadlink-cli <SUBCOMMAND>

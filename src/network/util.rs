@@ -1,3 +1,5 @@
+//! Set of utility methods useful when working with network requests.
+
 use std::{
     net::{
         IpAddr,
@@ -22,7 +24,7 @@ pub fn checksum(data: &[u8]) -> u16 {
     return sum as u16;
 }
 
-/// Returns the first available non-local address
+/// Returns the first available non-local address or the passed IP, if present.
 pub fn local_ip_or(ip: Option<Ipv4Addr>) -> IpAddr {
     return match ip {
         Some(ip) => IpAddr::V4(ip),
@@ -55,7 +57,7 @@ fn send_and_receive_impl(msg: &[u8], addr: Ipv4Addr, port: Option<u16>) -> Resul
     return Ok(socket);
 }
 
-/// Sends a message and returns the received responses.
+/// Sends a message and returns the as many received responses as possible (within a timeout).
 pub fn send_and_receive_many<I, T>(msg: &[u8], addr: Ipv4Addr, port: Option<u16>, cb: T) -> Result<Vec<I>, String>
 where
     T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>
@@ -76,7 +78,7 @@ where
     return Ok(results);
 }
 
-/// Sends a message and returns the received responses.
+/// Sends a message and returns the first received response.
 pub fn send_and_receive_one<I, T>(msg: &[u8], addr: Ipv4Addr, port: Option<u16>, cb: T) -> Result<I, String>
 where
     T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>

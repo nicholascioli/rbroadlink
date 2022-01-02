@@ -28,7 +28,8 @@ pub struct CommandMessage {
     #[packed_field(bytes = "0x24:0x25")]
     device_type: u16,
 
-    /// The type of packet being sent.
+    /// The type of packet being sent. This should be populated from the wrapped
+    /// message type using the [CommandTrait].
     #[packed_field(bytes = "0x26:0x27")]
     packet_type: u16,
 
@@ -54,6 +55,11 @@ pub struct CommandMessage {
 }
 
 impl CommandMessage {
+    /// Create a new CommandMessage using the specified count.
+    ///
+    /// Typically, the count of a message is randomly generated using [CommandMessage::new],
+    /// but there may be a case where you need to use a specific value for the count, such as when
+    /// testing.
     pub fn with_count<T>(count: u16, device_model_code: u16, mac: [u8; 6], id: u32) -> CommandMessage
     where
         T: CommandTrait
@@ -70,6 +76,7 @@ impl CommandMessage {
         };
     }
 
+    /// Create a new CommandMessage.
     pub fn new<T>(device_model_code: u16, mac: [u8; 6], id: u32) -> CommandMessage
     where
         T: CommandTrait
@@ -81,7 +88,7 @@ impl CommandMessage {
     }
 
 
-    /// Pack the command message while appending the payload
+    /// Pack the command message while appending the payload.
     pub fn pack_with_payload(mut self, payload: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, String> {
         let cipher = AesCbc::new_from_slices(key, &constants::INITIAL_VECTOR)
             .expect("Could not construct cipher!");
@@ -112,7 +119,7 @@ impl CommandMessage {
         return Ok(complete_command);
     }
 
-    /// Unpack the command message with the associated payload
+    /// Unpack the command message with the associated payload.
     pub fn unpack_with_payload(mut bytes: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, String> {
         // Ensure that the data is correct
         if bytes.len() < 0x38 {

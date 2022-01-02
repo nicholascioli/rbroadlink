@@ -24,8 +24,6 @@ pub enum WirelessConnection<'a> {
 
 /// WirelessConnectionMessage represents a message used for instructing a device
 /// to connect to a specified wireless network.
-///
-/// Refer to the following for struct layout -> https://github.com/mjg59/python-broadlink/blob/9ff6b2d48e58f005765088cdf3dc5cc553cdb01a/protocol.md
 #[derive(PackedStruct, Debug)]
 #[packed_struct(bit_numbering = "msb0", endian = "lsb", size_bytes = "136")]
 pub struct WirelessConnectionMessage {
@@ -59,6 +57,7 @@ pub struct WirelessConnectionMessage {
 }
 
 impl WirelessConnection<'_> {
+    /// Pack a WirelessCOnnection into its network transport format.
     pub fn to_message(&self) -> Result<WirelessConnectionMessage, String> {
         let empty_pass = "";
         let (ssid, pass, security_mode) = match self {

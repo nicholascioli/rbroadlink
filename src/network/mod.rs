@@ -1,3 +1,7 @@
+//! Messages sent over the wire to the broadlink device.
+//!
+//! Refer to the following for protocol information -> <https://github.com/mjg59/python-broadlink/blob/9ff6b2d48e58f005765088cdf3dc5cc553cdb01a/protocol.md>
+
 mod authentication;
 mod command;
 mod discovery;

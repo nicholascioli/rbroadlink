@@ -1,3 +1,5 @@
+//! Traits shared amongst the various structures.
+
 mod command_trait;
 mod device_trait;
 

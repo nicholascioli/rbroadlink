@@ -1,19 +1,5 @@
 use std::net::Ipv4Addr;
 
-// impl fmt::Display for Device {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(
-//             f,
-//             "{} [{:?}] (address = {}, mac = {}, locked? = {})",
-//             self.name,
-//             self.model,
-//             self.address,
-//             self.mac.iter().map(|x| format!("{:02X}", x)).collect::<Vec<String>>().join(":"),
-//             self.is_locked
-//         )
-//     }
-// }
-
 /// Represents a broadlink device core information.
 #[derive(Debug, Clone)]
 pub struct DeviceInfo {

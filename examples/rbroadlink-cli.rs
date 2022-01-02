@@ -28,10 +28,6 @@ enum Commands {
         /// The IP address of the broadlink device.
         device_ip: Ipv4Addr,
 
-        /// The type of code to send.
-        #[clap(arg_enum)]
-        mode: BlastModeArg,
-
         /// The code to send, in hex (e.g. abcdef0123456789)
         code: String,
     },
@@ -86,12 +82,6 @@ enum Commands {
 }
 
 #[derive(ArgEnum, Clone, Debug)]
-enum BlastModeArg {
-    IR,
-    RF,
-}
-
-#[derive(ArgEnum, Clone, Debug)]
 enum LearnCodeType {
     IR,
     RF,
@@ -112,7 +102,7 @@ fn main() -> Result<(), String>{
 
     // Run the command
     return match args.command {
-        Commands::Blast { local_ip, device_ip, mode, code } => blast(local_ip, device_ip, mode, code),
+        Commands::Blast { local_ip, device_ip, code } => blast(local_ip, device_ip, code),
         Commands::Connect { security_mode, ssid, password, prompt } => connect(security_mode, ssid, password, prompt),
         Commands::Learn { local_ip, device_ip, code_type } => learn(local_ip, device_ip, code_type),
         Commands::List { local_ip } => list(local_ip),
@@ -120,7 +110,7 @@ fn main() -> Result<(), String>{
     }
 }
 
-fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, mode: BlastModeArg, code: String) -> Result<(), String> {
+fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code: String) -> Result<(), String> {
     // Construct a device directly
     let device = Device::from_ip(device_ip, local_ip).expect("Could not connect to device!");
     let hex_code = hex::decode(code).expect("Invalid code!");
@@ -131,11 +121,8 @@ fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, mode: BlastModeArg, co
         _ => return Err("Device specified is not a remote!".into()),
     };
 
-    println!("Blasting {:?} code: {:02X?}", mode, hex_code);
-    return match mode {
-        BlastModeArg::IR => remote.send_ir(&hex_code),
-        BlastModeArg::RF => remote.send_rf(&hex_code),
-    };
+    println!("Blasting IR/RF code: {:02X?}", hex_code);
+    return remote.send_code(&hex_code);
 }
 
 fn connect(sec_mode: WirelessConnectionArg, ssid: String, password: Option<String>, prompt: bool) -> Result<(), String> {
@@ -179,8 +166,11 @@ fn learn(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code_type: LearnCodeTy
     };
 
     // Try to learn the code
-    let code = remote.learn_ir()
-        .expect("Could not learn code from device!");
+    let code = match code_type {
+        LearnCodeType::IR => remote.learn_ir(),
+        LearnCodeType::RF => remote.learn_rf(),
+    }.expect("Could not learn code from device!");
+
     let hex_string = hex::encode(&code);
     println!("Got code => {}", hex_string);
 

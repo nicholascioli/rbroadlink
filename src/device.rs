@@ -38,14 +38,15 @@ use crate::{
     },
 };
 
-/// A braodlink device.
+/// A generic broadlink device.
 pub enum Device {
+    /// A device capable of transmitting IR / RF codes.
     Remote { remote: RemoteDevice },
 }
 
 /// Represents a generic device. See the different implementations for more specific info.
 impl Device {
-    /// Create a new device directly from an IP
+    /// Create a new device directly from an IP.
     pub fn from_ip(addr: Ipv4Addr, local_ip: Option<Ipv4Addr>) -> Result<Device, String> {
         // Grab the first non-loopback address
         let selected_ip = local_ip_or(local_ip);
@@ -86,6 +87,7 @@ impl Device {
     }
 
     /// Authenticate a device. This is needed before any commands can be sent.
+    ///
     /// Note: This is automatically called when constructing a device.
     pub fn authenticate(&mut self) -> Result<(), String> {
         let info = self.get_info();
@@ -109,7 +111,7 @@ impl Device {
     }
 
     /// Connects any found device to a specified network. Requires the host machine
-    /// to connect to the device directly. Refer to -> https://github.com/mjg59/python-broadlink#setup
+    /// to connect to the device directly. Refer to -> <https://github.com/mjg59/python-broadlink#setup>
     pub fn connect_to_network(network: &WirelessConnection) -> Result<WirelessConnectionMessage, String> {
         let msg = network.to_message().expect("Could not create wireless connection message!");
         let packed = msg.pack().expect("Could not pack wireless connection message!");
@@ -123,7 +125,7 @@ impl Device {
     }
 
     /// Sends a raw command to a broadlink device.
-    /// Note: Try to avoid using this method in favor of more specific methods (e.g. learn_rf, send_rf, etc.)
+    /// Note: Try to avoid using this method in favor of more specific methods (e.g. [Device::authenticate], etc.)
     pub fn send_command<T>(&self, payload: &[u8]) -> Result<Vec<u8>, String>
     where
         T: CommandTrait,

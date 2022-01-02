@@ -82,6 +82,7 @@ pub struct DiscoveryResponse {
 }
 
 impl DiscoveryMessage {
+    /// Create a new DiscoveryMessage.
     pub fn new(addr: IpAddr, port: u16, time: Option<DateTime<Local>>) -> Result<DiscoveryMessage, String> {
         // Get the time
         let time = match time {

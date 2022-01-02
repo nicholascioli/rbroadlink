@@ -24,7 +24,7 @@ pub struct AuthenticationMessage {
     name: [u8; 0x20],
 }
 
-/// A message used to authenticate with a broadlink device on the network.
+/// The response to an authenticate request for a broadlink device on the network.
 #[derive(PackedStruct, Debug)]
 #[packed_struct(bit_numbering = "msb0", endian = "lsb", size_bytes = "0x14")]
 pub struct AuthenticationResponse {
@@ -38,6 +38,8 @@ pub struct AuthenticationResponse {
 }
 
 impl AuthenticationMessage {
+    /// Construct a new AuthenticationMessage. Name should correspond to the name
+    /// of the device, as presented by the device.
     pub fn new(name: &str) -> AuthenticationMessage {
         let mut fixed_name = [0u8; 0x20];
 
