@@ -1,6 +1,6 @@
 [package]
 name = "rbroadlink"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "A library to control broadlink smart devices."
@@ -32,6 +32,6 @@ phf = { version = "0.10", features = ["macros"] }
 rand = "0.8.4"
 
 [dev-dependencies]
-clap = { version = "3.0.0-rc.9", features = ["derive"] }
+clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 rpassword = "5.0"
