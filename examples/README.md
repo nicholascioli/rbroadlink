@@ -1,6 +1,6 @@
 # Examples
 
-Below are a list of examples included with this library. They can be run by using one of the followin:
+Below are a list of examples included with this library. They can be run by using one of the following:
 - `cargo run --example EXAMPLE_NAME --features EXAMPLE_NAME`
 - `cargo build --example EXAMPLE_NAME --release --features EXAMPLE_NAME`
 - `docker build -t EXAMPLE_NAME --build-arg example=EXAMPLE_NAME .` (While in the root directory)
