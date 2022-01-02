@@ -1,8 +1,9 @@
 # Examples
 
-Below are a list of examples included with this library. They can be run by using
-`cargo run --example EXAMPLE_NAME` or by building them with `cargo build --example
-EXAMPLE_NAME --release`.
+Below are a list of examples included with this library. They can be run by using one of the followin:
+- `cargo run --example EXAMPLE_NAME --features EXAMPLE_NAME`
+- `cargo build --example EXAMPLE_NAME --release --features EXAMPLE_NAME`
+- `docker build -t EXAMPLE_NAME --build-arg example=EXAMPLE_NAME .` (While in the root directory)
 
 ## Client
 
@@ -34,7 +35,7 @@ SUBCOMMANDS:
 An example of using the cli to learn an IR code for a device at 10.8.0.1 is shown below:
 
 ```sh
-cargo run --example rbroadlink-cli -- learn 10.8.0.1 ir
+cargo run --example rbroadlink-cli --features rbroadlink-cli -- learn 10.8.0.1 ir
 ```
 
 ## MQTT Bridge
@@ -95,5 +96,5 @@ An example of using the bridge with a statically defined client at 10.8.0.1 and 
 mqtt://1.2.3.4:1883 is shown below:
 
 ```sh
-cargo run --example mqtt-broadlink -- -c 10.8.0.1 mqtt://1.2.3.4:1883
+cargo run --example mqtt-broadlink --features mqtt-broadlink -- -c 10.8.0.1 mqtt://1.2.3.4:1883
 ```
