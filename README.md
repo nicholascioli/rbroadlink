@@ -36,10 +36,10 @@ You can also use the included cli to do so:
 
 ```sh
 # Pass the password directly
-cargo run --example rbroadlink-cli -- connect wpa2 "SSID Here" "Password here"
+cargo run --example rbroadlink-cli --features rbroadlink-cli -- connect wpa2 "SSID Here" "Password here"
 
 # Prompt for the password safely
-cargo run --example rbroadlink-cli -- connect -p wpa2 "SSID Here"
+cargo run --example rbroadlink-cli --features rbroadlink-cli -- connect -p wpa2 "SSID Here"
 ```
 
 ## Usage
