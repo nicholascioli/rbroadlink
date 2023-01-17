@@ -23,6 +23,9 @@ use crate::{
 
 /// A mapping of remote device codes to their friendly model equivalent.
 pub const REMOTE_CODES: phf::Map<u16, &'static str> = phf_map! {
+    0x520Bu16 => "RM4 Pro",
+    0x5213u16 => "RM4 Pro",
+    0x5218u16 => "RM4C Pro",
     0x6026u16 => "RM4 Pro",
     0x6184u16 => "RMC4 Pro",
     0x61A2u16 => "RM4 Pro",
