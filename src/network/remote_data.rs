@@ -57,16 +57,16 @@ impl RemoteDataMessage {
         self.payload_length = payload
             .len()
             .try_into()
-            .expect("Payload is too long!");
+            .map_err(|e| format!("Payload is too long! {}", e))?;
 
         // Add 4 for the needed stop sequence
         self.payload_length = self.payload_length
             .checked_add(4u16)
-            .expect("Could not add the start buffer! Payload is too long");
+            .ok_or_else(|| "Could not add the start buffer! Payload is too long")?;
 
         // Append the payload to the header
         let mut result = self.pack()
-            .expect("Could not pack message!")
+            .map_err(|e| format!("Could not pack message! {}", e))?
             .to_vec();
         result.extend(payload);
 
@@ -88,7 +88,7 @@ impl RemoteDataMessage {
 
         // Attempt to unpack the header
         let info = RemoteDataMessage::unpack_from_slice(&bytes[0x00..0x06])
-            .expect("Could not unpack remote data response!");
+            .map_err(|e| format!("Could not unpack remote data response! {}", e))?;
 
         // Extract the payload
         let payload_length = usize::from(info.payload_length + 1);
