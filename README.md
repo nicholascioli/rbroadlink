@@ -1,4 +1,6 @@
 # rbroadlink
+[![Crates.io](https://img.shields.io/crates/v/rbroadlink.svg)](https://crates.io/crates/rbroadlink)
+[![Crates.io](https://img.shields.io/crates/l/rbroadlink.svg)](https://crates.io/crates/rbroadlink)
 
 A rust port of the [python-broadlink](https://github.com/mjg59/python-broadlink)
 library.
