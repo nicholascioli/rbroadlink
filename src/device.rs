@@ -15,6 +15,7 @@ use crate::{
 
     DeviceInfo,
     RemoteDevice,
+    HvacDevice,
 
     network::{
         AuthenticationMessage,
@@ -42,6 +43,8 @@ use crate::{
 pub enum Device {
     /// A device capable of transmitting IR / RF codes.
     Remote { remote: RemoteDevice },
+    /// Air Conditioner/HVAC device.
+    Hvac { hvac: HvacDevice },
 }
 
 /// Represents a generic device. See the different implementations for more specific info.
@@ -158,6 +161,7 @@ impl DeviceTrait for Device {
     fn get_info(&self) -> DeviceInfo {
         return match self {
             Device::Remote { remote } => remote.info.clone(),
+            Device::Hvac { hvac } => hvac.info.clone(),
         };
     }
 
@@ -167,6 +171,10 @@ impl DeviceTrait for Device {
             Device::Remote { remote } => {
                 remote.info.auth_id = id;
                 remote.info.key = key;
+            },
+            Device::Hvac { hvac } => {
+                hvac.info.auth_id = id;
+                hvac.info.key = key;
             },
         };
     }
