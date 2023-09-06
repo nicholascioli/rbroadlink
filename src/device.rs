@@ -12,6 +12,7 @@ use packed_struct::prelude::{ PackedStruct, PackedStructSlice };
 
 use crate::{
     REMOTE_CODES,
+    HVAC_CODES,
 
     DeviceInfo,
     RemoteDevice,
@@ -222,6 +223,9 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     let mut device = match &response.model_code {
         _ if REMOTE_CODES.contains_key(&response.model_code) => Device::Remote {
             remote: RemoteDevice::new(name, addr_ip, response)
+        },
+        _ if HVAC_CODES.contains_key(&response.model_code) => Device::Hvac {
+            hvac: HvacDevice::new(name, addr_ip, response)
         },
         _ => return Err(format!("Unknown device: {}", response.model_code)),
     };
