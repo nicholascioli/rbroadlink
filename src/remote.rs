@@ -74,7 +74,7 @@ impl RemoteDevice {
     pub fn learn_ir(&self) -> Result<Vec<u8>, String> {
         // First enter learning...
         self.send_command(&[], RemoteDataCommand::StartLearningIR)
-            .expect("Could not enter learning mode!");
+            .map_err(|e| format!("Could not enter learning mode! {}", e))?;
 
         // Block until we learn the code or timeout
         let attempts = 10;
@@ -84,7 +84,7 @@ impl RemoteDevice {
             std::thread::sleep(interval);
 
             let code: Vec<u8> = self.send_command(&[], RemoteDataCommand::GetCode)
-                .expect("Could not check code status of device!");
+                .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if code.len() != 0 {
                 return Ok(code);
             }
@@ -109,7 +109,7 @@ impl RemoteDevice {
     pub fn learn_rf(&self) -> Result<Vec<u8>, String> {
         // Start sweeping for the type of frequency in use
         self.send_command(&[], RemoteDataCommand::SweepRfFrequencies)
-            .expect("Could not start sweeping frequencies!");
+            .map_err(|e| format!("Could not start sweeping frequencies! {}", e))?;
 
         // Wait for the frequency to be identified
         let attempts = 10;
@@ -120,7 +120,7 @@ impl RemoteDevice {
             std::thread::sleep(interval);
 
             let frequency: Vec<u8> = self.send_command(&[], RemoteDataCommand::CheckFrequency)
-                .expect("Could not check code status of device!");
+                .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if frequency[0] == 1 {
                 frequency_found = true;
                 break;
@@ -130,13 +130,13 @@ impl RemoteDevice {
         // Error out if no frequency is found
         if !frequency_found {
             self.send_command(&[], RemoteDataCommand::StopRfSweep)
-                .expect("Could not cancel RF sweep!");
+                .map_err(|e| format!("Could not cancel RF sweep! {}", e))?;
             return Err("Could not determine frequency!".into());
         }
 
         // Enter RF learning mode
         self.send_command(&[], RemoteDataCommand::StartLearningRF)
-            .expect("Could not enter learning mode!");
+            .map_err(|e| format!("Could not enter learning mode! {}", e))?;
 
         // Block until we learn the code or timeout
         for _ in 0..attempts {
@@ -144,7 +144,7 @@ impl RemoteDevice {
             std::thread::sleep(interval);
 
             let code: Vec<u8> = self.send_command(&[], RemoteDataCommand::GetCode)
-                .expect("Could not check code status of device!");
+                .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if code.len() != 0 {
                 return Ok(code);
             }
@@ -152,14 +152,14 @@ impl RemoteDevice {
 
         // If we haven't gotten anything up until now, then we failed
         self.send_command(&[], RemoteDataCommand::StopRfSweep)
-            .expect("Could not cancel RF sweep!");
+            .map_err(|e| format!("Could not cancel RF sweep! {}", e))?;
         return Err("Could not learn RF code! Operation timed out.".into());
     }
 
     /// Sends an IR/RF code to the world.
     pub fn send_code(&self, code: &[u8]) -> Result<(), String> {
         self.send_command(code, RemoteDataCommand::SendCode)
-            .expect("Could not send IR code to device!");
+            .map_err(|e| format!("Could not send IR code to device! {}", e))?;
 
         return Ok(());
     }
@@ -174,10 +174,10 @@ impl RemoteDevice {
         // Construct the data message
         let msg = RemoteDataMessage::new(command);
         let packed = msg.pack_with_payload(&payload)
-            .expect("Could not pack remote data message!");
+            .map_err(|e| format!("Could not pack remote data message! {}", e))?;
 
         let response = generic_device.send_command::<RemoteDataMessage>(&packed)
-            .expect("Could not send code inside of the command!");
+            .map_err(|e| format!("Could not send code inside of the command! {}", e))?;
 
         return RemoteDataMessage::unpack_with_payload(&response);
     }

@@ -49,36 +49,36 @@ impl Device {
     /// Create a new device directly from an IP.
     pub fn from_ip(addr: Ipv4Addr, local_ip: Option<Ipv4Addr>) -> Result<Device, String> {
         // Grab the first non-loopback address
-        let selected_ip = local_ip_or(local_ip);
+        let selected_ip = local_ip_or(local_ip)?;
 
         // Construct the discovery message
         let port = 42424;
-        let discover = DiscoveryMessage::new(selected_ip, port, None).expect("Could not construct discovery message!");
-        let msg = discover.pack().expect("Could not pack DiscoveryMessage!");
+        let discover = DiscoveryMessage::new(selected_ip, port, None)?;
+        let msg = discover.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
 
         return Ok(
             send_and_receive_one(&msg, addr, Some(port), |bytes_received, bytes, addr| {
                 return create_device_from_packet(addr, bytes_received, bytes);
-            }).expect("Could not communicate with specified device!")
+            }).map_err(|e| format!("Could not communicate with specified device! {}", e))?
         );
     }
 
     /// List all devices in the current network. Optionally specify the local IP if on different subnets.
     pub fn list(ip: Option<Ipv4Addr>) -> Result<Vec<Device>, String> {
         // Grab the first non-loopback address
-        let selected_ip = local_ip_or(ip);
+        let selected_ip = local_ip_or(ip)?;
 
         // Construct the discovery message
         let port = 42424;
-        let discover = DiscoveryMessage::new(selected_ip, port, None).expect("Could not construct discovery message!");
-        let msg = discover.pack().expect("Could not pack DiscoveryMessage!");
+        let discover = DiscoveryMessage::new(selected_ip, port, None)?;
+        let msg = discover.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
 
         let results = send_and_receive_many(&msg, Ipv4Addr::BROADCAST, Some(port), |bytes_received, bytes, addr| {
             return Ok(
                 create_device_from_packet(addr, bytes_received, &bytes)
-                    .expect("Could not create device from packet!")
+                    .map_err(|e| format!("Could not create device from packet! {}", e))?
             )
-        }).expect("Could not send discovery message!");
+        }).map_err(|e| format!("Could not send discovery message! {}", e))?;
 
         // Remove duplicates
         // TODO
@@ -94,15 +94,15 @@ impl Device {
 
         // Create the actual auth message
         let msg = AuthenticationMessage::new(&info.name);
-        let packed = msg.pack().expect("Could not pack Authentication message!");
+        let packed = msg.pack().map_err(|e| format!("Could not pack Authentication message! {}", e))?;
 
         // Send the auth message command to the device
         let response = self.send_command::<AuthenticationMessage>(&packed)
-            .expect("Could not send authentication command!");
+            .map_err(|e| format!("Could not send authentication command! {}", e))?;
 
         // Unpack the response
         let auth = AuthenticationResponse::unpack_from_slice(&response)
-            .expect("Could not unpack auth response!");
+            .map_err(|e| format!("Could not unpack auth response! {}", e))?;
 
         // Save the returned key and ID
         self.save_auth_pair(auth.id, auth.key);
@@ -113,13 +113,15 @@ impl Device {
     /// Connects any found device to a specified network. Requires the host machine
     /// to connect to the device directly. Refer to -> <https://github.com/mjg59/python-broadlink#setup>
     pub fn connect_to_network(network: &WirelessConnection) -> Result<WirelessConnectionMessage, String> {
-        let msg = network.to_message().expect("Could not create wireless connection message!");
-        let packed = msg.pack().expect("Could not pack wireless connection message!");
+        let msg = network.to_message()
+            .map_err(|e| format!("Could not create wireless connection message! {}", e))?;
+        let packed = msg.pack()
+            .map_err(|e| format!("Could not pack wireless connection message! {}", e))?;
 
         // We don't know the format of the response, so we just pass here.
         send_and_receive_one(&packed, Ipv4Addr::BROADCAST, None, |_, _, _| {
             return Ok(());
-        }).expect("Could not send connection message!");
+        }).map_err(|e| format!("Could not send connection message! {}", e))?;
 
         return Ok(msg);
     }
@@ -141,7 +143,7 @@ impl Device {
 
         // Pack the message with the payload
         let packed = cmd.pack_with_payload(&payload, &info.key)
-            .expect("Could not pack command with payload!");
+            .map_err(|e| format!("Could not pack command with payload! {}", e))?;
 
         // Send the message to the device
         return send_and_receive_one(&packed, info.address, None, |_, bytes, _| {
@@ -202,11 +204,11 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     };
 
     let response = DiscoveryResponse::unpack_from_slice(&bytes)
-        .expect("Could not unpack response from device!");
+        .map_err(|e| format!("Could not unpack response from device! {}", e))?;
 
     // Decode the name
     let raw_name = response.name.clone();
-    let name = from_utf8(&raw_name).expect("Could not decode device name!");
+    let name = from_utf8(&raw_name).map_err(|e| format!("Could not decode device name! {}", e))?;
 
     // Create the device conditionally based on the model code.
     let mut device = match &response.model_code {
@@ -218,7 +220,7 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
 
     // Get the auth key for this device
     device.authenticate()
-        .expect("Could not authenticate device!");
+        .map_err(|e| format!("Could not authenticate device! {}", e))?;
 
     return Ok(device);
 }

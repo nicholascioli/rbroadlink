@@ -103,28 +103,33 @@ impl DiscoveryMessage {
 
         // Chrono returns the information in u32, so we need to convert them here.
         // These conversions should, in theory, not fail. But we check nonetheless.
-        let mut msg = DiscoveryMessage {
-            gmt_offset: time.offset().local_minus_utc(),
-            year: time.year().try_into().expect("Could not construct DiscoveryMessage! Year is out of range."),
-            minute: time.minute().try_into().expect("Could not construct DiscoveryMessage! Minutes are out of range."),
-            hour: time.hour().try_into().expect("Could not construct DiscoveryMessage! Hour is out of range."),
-            year_without_century: (time.year() % 100) as u8,
-            day_of_the_week: time.weekday().number_from_monday().try_into().expect("Could not construct DiscoveryMessage! Day opf the week is out of range."),
-            day_of_the_month: time.day().try_into().expect("Could not construct DiscoveryMessage! Day is out of range."),
-            month: time.month().try_into().expect("Could not construct DiscoveryMessage! Month is out of range."),
-            local_ip_reversed: reversed_ip,
-            local_port: port,
-
-            // This will be filled in later
-            checksum: 0,
-            magic_constant: 0x06,
-        };
+        let mut msg = construct_message(reversed_ip, port, time)
+            .map_err(|e| format!("Could not construct DiscoveryMessage! {}", e))?;
 
         // Calculate the checksum
         msg.checksum = checksum(
-            &msg.pack().expect("Could not pack DiscoveryMessage!")
+            &msg.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?
         );
 
         return Ok(msg);
     }
+}
+
+fn construct_message(reversed_ip: [u8; 4], port: u16, time: DateTime<Local>) -> Result<DiscoveryMessage, String> {
+    Ok(DiscoveryMessage {
+        gmt_offset: time.offset().local_minus_utc(),
+        year: time.year().try_into().map_err(|e| format!("Year is out of range. {}", e))?,
+        minute: time.minute().try_into().map_err(|e| format!("Minutes are out of range. {}", e))?,
+        hour: time.hour().try_into().map_err(|e| format!("Hour is out of range. {}", e))?,
+        year_without_century: (time.year() % 100) as u8,
+        day_of_the_week: time.weekday().number_from_monday().try_into().map_err(|e| format!("Day of the week is out of range. {}", e))?,
+        day_of_the_month: time.day().try_into().map_err(|e| format!("Day is out of range. {}", e))?,
+        month: time.month().try_into().map_err(|e| format!("Month is out of range. {}", e))?,
+        local_ip_reversed: reversed_ip,
+        local_port: port,
+
+        // This will be filled in later
+        checksum: 0,
+        magic_constant: 0x06,
+    })
 }

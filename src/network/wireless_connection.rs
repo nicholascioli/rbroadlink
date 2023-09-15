@@ -94,15 +94,15 @@ impl WirelessConnection<'_> {
             // Grab info from connection
             ssid: ssid_fixed,
             password: pass_fixed,
-            ssid_length: u8::try_from(ssid.len()).expect("Could not use provided SSID! SSID is too long (max 32 characters)."),
-            password_length: u8::try_from(pass.len()).expect("Could not use provided password! Password is too long (max 32 characters)."),
+            ssid_length: u8::try_from(ssid.len()).map_err(|e| format!("Could not use provided SSID! SSID is too long (max 32 characters). {}", e))?,
+            password_length: u8::try_from(pass.len()).map_err(|e| format!("Could not use provided password! Password is too long (max 32 characters). {}", e))?,
 
             security_mode: security_mode,
         };
 
         // Add the checksum into the msg
         msg.checksum = checksum(
-            &msg.pack().expect("Could not pack WirelessConnectionMessage!")
+            &msg.pack().map_err(|e| format!("Could not pack WirelessConnectionMessage! {}", e))?
         );
 
         // Return the newly created message

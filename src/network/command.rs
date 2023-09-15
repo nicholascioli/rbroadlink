@@ -91,7 +91,7 @@ impl CommandMessage {
     /// Pack the command message while appending the payload.
     pub fn pack_with_payload(mut self, payload: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, String> {
         let cipher = AesCbc::new_from_slices(key, &constants::INITIAL_VECTOR)
-            .expect("Could not construct cipher!");
+            .map_err(|e| format!("Could not construct cipher! {}", e))?;
 
         // Save the checksum of the payload before encrypting
         self.payload_checksum = checksum(&payload);
@@ -101,7 +101,7 @@ impl CommandMessage {
 
         // Pack the command with the payload appended
         let packed = self.pack()
-            .expect("Could not pack command header!");
+            .map_err(|e| format!("Could not pack command header! {}", e))?;
 
         let mut appended = packed.to_vec();
         appended.extend(&encrypted);
@@ -111,7 +111,7 @@ impl CommandMessage {
 
         // Construct the final message
         let completely_packed = self.pack()
-            .expect("Could not pack completed command!");
+            .map_err(|e| format!("Could not pack completed command! {}", e))?;
 
         let mut complete_command: Vec<u8> = completely_packed.to_vec();
         complete_command.extend(&encrypted);
@@ -128,7 +128,7 @@ impl CommandMessage {
 
         // Unpack the header
         let command_header = CommandMessage::unpack_from_slice(&bytes[0..0x38])
-            .expect("Could not unpack command from bytes!");
+            .map_err(|e| format!("Could not unpack command from bytes! {}", e))?;
 
         // Zero out the checksum from the header for verification
         // TODO: Is there a nicer way to do this?
@@ -147,10 +147,10 @@ impl CommandMessage {
 
         // Decrypt the message
         let cipher = AesCbc::new_from_slices(key, &constants::INITIAL_VECTOR)
-            .expect("Could not construct cipher!");
+            .map_err(|e| format!("Could not construct cipher! {}", e))?;
 
         let decrypted = cipher.decrypt_vec(&bytes[0x38..])
-            .expect("Could not decrypt command payload!");
+            .map_err(|e| format!("Could not decrypt command payload! {}", e))?;
 
         return Ok(decrypted);
     }

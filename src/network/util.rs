@@ -25,16 +25,16 @@ pub fn checksum(data: &[u8]) -> u16 {
 }
 
 /// Returns the first available non-local address or the passed IP, if present.
-pub fn local_ip_or(ip: Option<Ipv4Addr>) -> IpAddr {
-    return match ip {
+pub fn local_ip_or(ip: Option<Ipv4Addr>) -> Result<IpAddr, String> {
+    Ok(match ip {
         Some(ip) => IpAddr::V4(ip),
         None => get_if_addrs::get_if_addrs()
-            .expect("Could not automatically determine machine IP address")
+            .map_err(|e| format!("Could not automatically determine machine IP address. {}", e))?
             .iter()
             .find(|x| x.ip().is_ipv4() && !x.ip().is_loopback())
-            .expect("Could not find a local IPv4 address!")
+            .ok_or("Could not find a local IPv4 address!")?
             .ip(),
-    };
+    })
 }
 
 /// Sends a message and returns the received response.
@@ -46,13 +46,13 @@ fn send_and_receive_impl(msg: &[u8], addr: Ipv4Addr, port: Option<u16>) -> Resul
     // Set up the communication socket
     // Note: We need to enable support for broadcast
     let socket = UdpSocket::bind(unspecified_addr)
-        .expect("Could not bind to any port.");
+        .map_err(|e| format!("Could not bind to any port. {}", e))?;
     socket.set_broadcast(true)
-        .expect("Could not enable broadcast.");
+        .map_err(|e| format!("Could not enable broadcast. {}", e))?;
 
     // Send the message
-    socket.set_read_timeout(Some(Duration::new(10, 0))).expect("Could not set read timeout!");
-    socket.send_to(&msg, destination_addr).expect("Could not broadcast message!");
+    socket.set_read_timeout(Some(Duration::new(10, 0))).map_err(|e| format!("Could not set read timeout! {}", e))?;
+    socket.send_to(&msg, destination_addr).map_err(|e| format!("Could not broadcast message! {}", e))?;
 
     return Ok(socket);
 }
@@ -64,14 +64,14 @@ where
 {
     // Get the socket
     let socket = send_and_receive_impl(msg, addr, port)
-        .expect("Could not create socket for message sending!");
+        .map_err(|e| format!("Could not create socket for message sending! {}", e))?;
 
     // Transform the results
     let mut results: Vec<I> = vec![];
     let mut recv_buffer = [0u8; 8092];
     while let Ok((bytes_received, addr)) = socket.recv_from(&mut recv_buffer) {
         results.push(
-            cb(bytes_received, &recv_buffer[0..bytes_received], addr).expect("Could not map result!")
+            cb(bytes_received, &recv_buffer[0..bytes_received], addr)?
         );
     }
 
@@ -85,13 +85,13 @@ where
 {
     // Get the socket
     let socket = send_and_receive_impl(msg, addr, port)
-        .expect("Could not create socket for message sending!");
+        .map_err(|e| format!("Could not create socket for message sending! {}", e))?;
 
     // Transform the result
     let mut recv_buffer = [0u8; 8092];
     if let Ok((bytes_received, addr)) = socket.recv_from(&mut recv_buffer) {
         return Ok(
-            cb(bytes_received, &recv_buffer[0..bytes_received], addr).expect("Could not map result!")
+            cb(bytes_received, &recv_buffer[0..bytes_received], addr)?
         );
     }
 
