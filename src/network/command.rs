@@ -152,6 +152,16 @@ impl CommandMessage {
         let decrypted = cipher.decrypt_vec(&bytes[0x38..])
             .map_err(|e| format!("Could not decrypt command payload! {}", e))?;
 
+        // Ensure that the payload checksums match
+        let real_checksum = checksum(&decrypted);
+        if command_header.payload_checksum != real_checksum {
+            return Err(format!(
+                "Payload checksum does not match actual checksum! Expected {} got {}",
+                real_checksum,
+                command_header.payload_checksum,
+            ));
+        }
+
         return Ok(decrypted);
     }
 }
