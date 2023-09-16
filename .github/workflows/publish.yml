@@ -26,7 +26,7 @@ jobs:
       - name: Tag the docker image with the release version
         run: 'docker image tag ghcr.io/nicholascioli/rbroadlink:latest ghcr.io/nicholascioli/rbroadlink:${{ github.ref_name }}'
       - name: Upload the tagged images to GHCR
-        run: 'docker push --all-tags ghcr.io/nicholascioli/rbroadlink:latest'
+        run: 'docker push --all-tags ghcr.io/nicholascioli/rbroadlink'
       - name: Publish to crates.io
         run: cargo publish --no-verify
         env:
