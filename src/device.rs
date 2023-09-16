@@ -12,9 +12,11 @@ use packed_struct::prelude::{ PackedStruct, PackedStructSlice };
 
 use crate::{
     REMOTE_CODES,
+    HVAC_CODES,
 
     DeviceInfo,
     RemoteDevice,
+    HvacDevice,
 
     network::{
         AuthenticationMessage,
@@ -42,6 +44,8 @@ use crate::{
 pub enum Device {
     /// A device capable of transmitting IR / RF codes.
     Remote { remote: RemoteDevice },
+    /// Air Conditioner/HVAC device.
+    Hvac { hvac: HvacDevice },
 }
 
 /// Represents a generic device. See the different implementations for more specific info.
@@ -158,6 +162,7 @@ impl DeviceTrait for Device {
     fn get_info(&self) -> DeviceInfo {
         return match self {
             Device::Remote { remote } => remote.info.clone(),
+            Device::Hvac { hvac } => hvac.info.clone(),
         };
     }
 
@@ -167,6 +172,10 @@ impl DeviceTrait for Device {
             Device::Remote { remote } => {
                 remote.info.auth_id = id;
                 remote.info.key = key;
+            },
+            Device::Hvac { hvac } => {
+                hvac.info.auth_id = id;
+                hvac.info.key = key;
             },
         };
     }
@@ -214,6 +223,9 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     let mut device = match &response.model_code {
         _ if REMOTE_CODES.contains_key(&response.model_code) => Device::Remote {
             remote: RemoteDevice::new(name, addr_ip, response)
+        },
+        _ if HVAC_CODES.contains_key(&response.model_code) => Device::Hvac {
+            hvac: HvacDevice::new(name, addr_ip, response)
         },
         _ => return Err(format!("Unknown device: {}", response.model_code)),
     };

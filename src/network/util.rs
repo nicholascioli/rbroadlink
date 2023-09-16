@@ -8,6 +8,7 @@ use std::{
         UdpSocket,
     },
     time::Duration,
+    slice::ChunksExact,
 };
 
 /// Computes the checksum of a slice of bytes.
@@ -22,6 +23,30 @@ pub fn checksum(data: &[u8]) -> u16 {
     }
 
     return sum as u16;
+}
+
+/// Computes the generic checksum of a bytes array.
+///
+/// This iterates all 16-bit array elements, summing
+/// the values into a 32-bit variable. This functions
+/// paddies with zero an octet at the end (if necessary)
+/// to turn into a 16-bit element.
+pub fn compute_generic_checksum(buf: &[u8]) -> u16 {
+    let mut state: u32 = 0xFFFF;
+
+    let mut chunks_iter: ChunksExact<u8> = buf.chunks_exact(2);
+    while let Some(chunk) = chunks_iter.next() {
+        state += u16::from_le_bytes([chunk[0], chunk[1]]) as u32;
+    }
+
+    if let Some(&b) = chunks_iter.remainder().get(0) {
+        state += u16::from_le_bytes([b, 0]) as u32;
+    }
+
+    state = (state >> 16) + (state & 0xffff);
+    state = !state & 0xffff;
+
+    state as u16
 }
 
 /// Returns the first available non-local address or the passed IP, if present.
