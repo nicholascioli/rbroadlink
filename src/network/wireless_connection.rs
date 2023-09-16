@@ -84,7 +84,7 @@ impl WirelessConnection<'_> {
         }
 
         // Construct the message
-        let mut msg = WirelessConnectionMessage{
+        let mut msg = WirelessConnectionMessage {
             // We will need to recalculate this after creating the message
             checksum: 0,
 
@@ -94,15 +94,26 @@ impl WirelessConnection<'_> {
             // Grab info from connection
             ssid: ssid_fixed,
             password: pass_fixed,
-            ssid_length: u8::try_from(ssid.len()).map_err(|e| format!("Could not use provided SSID! SSID is too long (max 32 characters). {}", e))?,
-            password_length: u8::try_from(pass.len()).map_err(|e| format!("Could not use provided password! Password is too long (max 32 characters). {}", e))?,
+            ssid_length: u8::try_from(ssid.len()).map_err(|e| {
+                format!(
+                    "Could not use provided SSID! SSID is too long (max 32 characters). {}",
+                    e
+                )
+            })?,
+            password_length: u8::try_from(pass.len()).map_err(|e| {
+                format!(
+                    "Could not use provided password! Password is too long (max 32 characters). {}",
+                    e
+                )
+            })?,
 
             security_mode: security_mode,
         };
 
         // Add the checksum into the msg
         msg.checksum = checksum(
-            &msg.pack().map_err(|e| format!("Could not pack WirelessConnectionMessage! {}", e))?
+            &msg.pack()
+                .map_err(|e| format!("Could not pack WirelessConnectionMessage! {}", e))?,
         );
 
         // Return the newly created message

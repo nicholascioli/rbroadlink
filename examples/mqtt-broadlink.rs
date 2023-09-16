@@ -1,24 +1,12 @@
-use std::{
-    collections::HashMap,
-    net::Ipv4Addr,
-    time::Duration,
-};
+use std::{collections::HashMap, net::Ipv4Addr, time::Duration};
 
 use clap::Parser;
 use log::{info, warn};
 use mqtt_async_client::{
+    client::{Client, KeepAlive, Publish, QoS, Subscribe, SubscribeTopic},
     Error,
-
-    client::{
-        Client,
-        KeepAlive,
-        Publish,
-        QoS,
-        Subscribe,
-        SubscribeTopic,
-    },
 };
-use rbroadlink::{ Device, traits::DeviceTrait };
+use rbroadlink::{traits::DeviceTrait, Device};
 
 #[derive(Parser, Clone, Debug)]
 #[clap(about, version, author)]
@@ -74,8 +62,7 @@ async fn main() {
     info!("Starting broadlink-mqtt v{}...", env!("CARGO_PKG_VERSION"));
 
     // Get the devices
-    let devices = get_devices(&args)
-        .expect("Could not find devices!");
+    let devices = get_devices(&args).expect("Could not find devices!");
 
     // Start an update thread on all the devices
     let mut threads: Vec<tokio::task::JoinHandle<_>> = vec![];
@@ -83,7 +70,8 @@ async fn main() {
         let args_copy = args.clone();
 
         threads.push(tokio::spawn(async move {
-            handle_device(&device, args_copy).await
+            handle_device(&device, args_copy)
+                .await
                 .expect("Could not handle device!");
         }));
     }
@@ -96,13 +84,18 @@ async fn main() {
 
 async fn handle_device(device: &Device, args: Args) -> Result<(), String> {
     let info = device.get_info();
-    let sanitized_name = info.friendly_model.to_lowercase().replace(" ", "-").replace("/", ">");
+    let sanitized_name = info
+        .friendly_model
+        .to_lowercase()
+        .replace(" ", "-")
+        .replace("/", ">");
     let mqtt_id = format!("{}-{}", args.mqtt_id.clone(), sanitized_name);
 
     // Construct the mqtt client
     let mut builder = Client::builder();
     builder
-        .set_url_string(&args.mqtt_broker).expect("Could not set MQTT broker URL!")
+        .set_url_string(&args.mqtt_broker)
+        .expect("Could not set MQTT broker URL!")
         .set_username(args.username.clone())
         .set_password(args.password.clone().map(|s| s.as_bytes().to_vec()))
         .set_client_id(Some(mqtt_id))
@@ -111,30 +104,38 @@ async fn handle_device(device: &Device, args: Args) -> Result<(), String> {
         .set_operation_timeout(Duration::from_secs(args.operation_timeout as u64))
         .set_automatic_connect(args.auto_connect);
 
-    let mut mqtt_client = builder.build()
+    let mut mqtt_client = builder
+        .build()
         .expect("Could not construct the MQTT client!");
 
     // Connect to the broker
     info!("Connecting to the MQTT broker at {}", &args.mqtt_broker);
-    mqtt_client.connect().await
+    mqtt_client
+        .connect()
+        .await
         .expect("Could not connect to MQTT broker!");
 
     // Publish the device information
-    let mut msg = Publish::new(get_path(&sanitized_name, &["info"]), info.friendly_type.into());
+    let mut msg = Publish::new(
+        get_path(&sanitized_name, &["info"]),
+        info.friendly_type.into(),
+    );
     msg.set_qos(QoS::AtLeastOnce);
     msg.set_retain(false);
 
-    mqtt_client.publish(&msg).await
+    mqtt_client
+        .publish(&msg)
+        .await
         .expect("Could not publish to the broker!");
 
     // Set up a listener for the commands
-    let command_subscription = Subscribe::new(vec![
-        SubscribeTopic{
-            qos: QoS::AtLeastOnce,
-            topic_path: get_path(&sanitized_name, &["cmd"]),
-        }
-    ]);
-    mqtt_client.subscribe(command_subscription).await
+    let command_subscription = Subscribe::new(vec![SubscribeTopic {
+        qos: QoS::AtLeastOnce,
+        topic_path: get_path(&sanitized_name, &["cmd"]),
+    }]);
+    mqtt_client
+        .subscribe(command_subscription)
+        .await
         .expect("Could not subscribe to command topic!")
         .any_failures()
         .expect("Failures encountered when subscribing to command topic!");
@@ -143,7 +144,9 @@ async fn handle_device(device: &Device, args: Args) -> Result<(), String> {
     loop {
         let response = mqtt_client.read_subscriptions().await;
         match response {
-            Err(Error::Disconnected) => return Err("Device was disconnected from the broker!".into()),
+            Err(Error::Disconnected) => {
+                return Err("Device was disconnected from the broker!".into())
+            }
             Ok(r) => {
                 // Consume the command
                 let data = String::from_utf8(r.payload().to_vec())
@@ -156,27 +159,49 @@ async fn handle_device(device: &Device, args: Args) -> Result<(), String> {
 
                 // Make sure that we skip non-cmds.
                 if cmd == None || payload == None {
-                    warn!("Skipping incomplete command for {}: {}", &sanitized_name, &data);
+                    warn!(
+                        "Skipping incomplete command for {}: {}",
+                        &sanitized_name, &data
+                    );
                     continue;
                 }
 
                 let unwrapped_cmd = *cmd.unwrap();
                 let unwrapped_payload = *payload.unwrap();
 
-                info!("Got command '{}' with payload => {}", unwrapped_cmd, unwrapped_payload);
+                info!(
+                    "Got command '{}' with payload => {}",
+                    unwrapped_cmd, unwrapped_payload
+                );
                 match unwrapped_cmd {
-                    "blast" => handle_blast(&mqtt_client, &device, &sanitized_name, &unwrapped_payload).await.expect("Could not handle blast!"),
-                    "learn" => handle_learn(&mqtt_client, &device, &sanitized_name, &unwrapped_payload).await.expect("Could not handle learn!"),
-                    _ => warn!("Skipping unknown command for {}: {}", &sanitized_name, &unwrapped_cmd),
+                    "blast" => {
+                        handle_blast(&mqtt_client, &device, &sanitized_name, &unwrapped_payload)
+                            .await
+                            .expect("Could not handle blast!")
+                    }
+                    "learn" => {
+                        handle_learn(&mqtt_client, &device, &sanitized_name, &unwrapped_payload)
+                            .await
+                            .expect("Could not handle learn!")
+                    }
+                    _ => warn!(
+                        "Skipping unknown command for {}: {}",
+                        &sanitized_name, &unwrapped_cmd
+                    ),
                 }
-            },
+            }
             Err(e) => warn!("Got unhandled error: {:?}", e),
         }
     }
 }
 
 /// Handles a blast command
-async fn handle_blast(client: &Client, device: &Device, sanitized_name: &str, payload: &str) -> Result<(), String> {
+async fn handle_blast(
+    client: &Client,
+    device: &Device,
+    sanitized_name: &str,
+    payload: &str,
+) -> Result<(), String> {
     // Decode the payload into a hex array.
     let hex = hex::decode(payload);
     if let Err(e) = hex {
@@ -190,12 +215,17 @@ async fn handle_blast(client: &Client, device: &Device, sanitized_name: &str, pa
     match device {
         Device::Remote { remote } => match remote.send_code(&hex) {
             Err(e) => {
-                let err_msg = Publish::new(get_path(&sanitized_name, &["blast_error"]), e.to_string().into());
-                client.publish(&err_msg).await
+                let err_msg = Publish::new(
+                    get_path(&sanitized_name, &["blast_error"]),
+                    e.to_string().into(),
+                );
+                client
+                    .publish(&err_msg)
+                    .await
                     .expect("Could not publish blast error!");
 
                 return Ok(());
-            },
+            }
             _ => info!("Blasted code successfully: {:?}", hex),
         },
         _ => {
@@ -206,21 +236,28 @@ async fn handle_blast(client: &Client, device: &Device, sanitized_name: &str, pa
 
     // Tell the MQTT broker that we successfully blasted
     let ok_msg = Publish::new(get_path(&sanitized_name, &["blast_status"]), "ok".into());
-    client.publish(&ok_msg).await
+    client
+        .publish(&ok_msg)
+        .await
         .expect("Could not publish blast status!");
 
     return Ok(());
 }
 
 /// Handles a learn command
-async fn handle_learn(client: &Client, device: &Device, sanitized_name: &str, payload: &str) -> Result<(), String> {
+async fn handle_learn(
+    client: &Client,
+    device: &Device,
+    sanitized_name: &str,
+    payload: &str,
+) -> Result<(), String> {
     // Only remotes can learn, so extract it here.
     let remote = match device {
         Device::Remote { remote } => remote,
         _ => {
             warn!("Device sent learn command, but is not a remote: {}", device);
             return Ok(());
-        },
+        }
     };
 
     // Try to learn the code
@@ -230,14 +267,19 @@ async fn handle_learn(client: &Client, device: &Device, sanitized_name: &str, pa
         _ => {
             warn!("Skipping invalid learn mode {}", payload);
             return Ok(());
-        },
+        }
     };
 
     // Short out if no code was learned.
     if let Err(e) = code {
         warn!("Device did not find any code! {:?}", e);
-        let err_msg = Publish::new(get_path(sanitized_name, &["code_error"]), e.to_string().into());
-        client.publish(&err_msg).await
+        let err_msg = Publish::new(
+            get_path(sanitized_name, &["code_error"]),
+            e.to_string().into(),
+        );
+        client
+            .publish(&err_msg)
+            .await
             .expect("Could not publish code error message!");
 
         return Ok(());
@@ -248,7 +290,9 @@ async fn handle_learn(client: &Client, device: &Device, sanitized_name: &str, pa
 
     // Publish the learned code
     let code_msg = Publish::new(get_path(sanitized_name, &["code"]), hex_code.into());
-    client.publish(&code_msg).await
+    client
+        .publish(&code_msg)
+        .await
         .expect("Could not send learned code!");
 
     return Ok(());

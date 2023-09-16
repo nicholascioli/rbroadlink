@@ -1,43 +1,19 @@
 use std::{
     fmt,
-    net::{
-        IpAddr,
-        Ipv4Addr,
-        SocketAddr,
-    },
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     str::from_utf8,
 };
 
-use packed_struct::prelude::{ PackedStruct, PackedStructSlice };
+use packed_struct::prelude::{PackedStruct, PackedStructSlice};
 
 use crate::{
-    REMOTE_CODES,
-    HVAC_CODES,
-
-    DeviceInfo,
-    RemoteDevice,
-    HvacDevice,
-
     network::{
-        AuthenticationMessage,
-        AuthenticationResponse,
-        CommandMessage,
-        DiscoveryMessage,
-        DiscoveryResponse,
-        WirelessConnection,
-        WirelessConnectionMessage,
-
-        util::{
-            local_ip_or,
-            send_and_receive_many,
-            send_and_receive_one,
-        }
+        util::{local_ip_or, send_and_receive_many, send_and_receive_one},
+        AuthenticationMessage, AuthenticationResponse, CommandMessage, DiscoveryMessage,
+        DiscoveryResponse, WirelessConnection, WirelessConnectionMessage,
     },
-
-    traits::{
-        CommandTrait,
-        DeviceTrait,
-    },
+    traits::{CommandTrait, DeviceTrait},
+    DeviceInfo, HvacDevice, RemoteDevice, HVAC_CODES, REMOTE_CODES,
 };
 
 /// A generic broadlink device.
@@ -58,12 +34,15 @@ impl Device {
         // Construct the discovery message
         let port = 42424;
         let discover = DiscoveryMessage::new(selected_ip, port, None)?;
-        let msg = discover.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
+        let msg = discover
+            .pack()
+            .map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
 
         return Ok(
             send_and_receive_one(&msg, addr, Some(port), |bytes_received, bytes, addr| {
                 return create_device_from_packet(addr, bytes_received, bytes);
-            }).map_err(|e| format!("Could not communicate with specified device! {}", e))?
+            })
+            .map_err(|e| format!("Could not communicate with specified device! {}", e))?,
         );
     }
 
@@ -75,14 +54,20 @@ impl Device {
         // Construct the discovery message
         let port = 42424;
         let discover = DiscoveryMessage::new(selected_ip, port, None)?;
-        let msg = discover.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
+        let msg = discover
+            .pack()
+            .map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?;
 
-        let results = send_and_receive_many(&msg, Ipv4Addr::BROADCAST, Some(port), |bytes_received, bytes, addr| {
-            return Ok(
-                create_device_from_packet(addr, bytes_received, &bytes)
-                    .map_err(|e| format!("Could not create device from packet! {}", e))?
-            )
-        }).map_err(|e| format!("Could not send discovery message! {}", e))?;
+        let results = send_and_receive_many(
+            &msg,
+            Ipv4Addr::BROADCAST,
+            Some(port),
+            |bytes_received, bytes, addr| {
+                return Ok(create_device_from_packet(addr, bytes_received, &bytes)
+                    .map_err(|e| format!("Could not create device from packet! {}", e))?);
+            },
+        )
+        .map_err(|e| format!("Could not send discovery message! {}", e))?;
 
         // Remove duplicates
         // TODO
@@ -98,10 +83,13 @@ impl Device {
 
         // Create the actual auth message
         let msg = AuthenticationMessage::new(&info.name);
-        let packed = msg.pack().map_err(|e| format!("Could not pack Authentication message! {}", e))?;
+        let packed = msg
+            .pack()
+            .map_err(|e| format!("Could not pack Authentication message! {}", e))?;
 
         // Send the auth message command to the device
-        let response = self.send_command::<AuthenticationMessage>(&packed)
+        let response = self
+            .send_command::<AuthenticationMessage>(&packed)
             .map_err(|e| format!("Could not send authentication command! {}", e))?;
 
         // Unpack the response
@@ -116,16 +104,21 @@ impl Device {
 
     /// Connects any found device to a specified network. Requires the host machine
     /// to connect to the device directly. Refer to -> <https://github.com/mjg59/python-broadlink#setup>
-    pub fn connect_to_network(network: &WirelessConnection) -> Result<WirelessConnectionMessage, String> {
-        let msg = network.to_message()
+    pub fn connect_to_network(
+        network: &WirelessConnection,
+    ) -> Result<WirelessConnectionMessage, String> {
+        let msg = network
+            .to_message()
             .map_err(|e| format!("Could not create wireless connection message! {}", e))?;
-        let packed = msg.pack()
+        let packed = msg
+            .pack()
             .map_err(|e| format!("Could not pack wireless connection message! {}", e))?;
 
         // We don't know the format of the response, so we just pass here.
         send_and_receive_one(&packed, Ipv4Addr::BROADCAST, None, |_, _, _| {
             return Ok(());
-        }).map_err(|e| format!("Could not send connection message! {}", e))?;
+        })
+        .map_err(|e| format!("Could not send connection message! {}", e))?;
 
         return Ok(msg);
     }
@@ -139,14 +132,11 @@ impl Device {
         let info = self.get_info();
 
         // Construct the command.
-        let cmd = CommandMessage::new::<T>(
-            info.model_code,
-            info.mac,
-            info.auth_id,
-        );
+        let cmd = CommandMessage::new::<T>(info.model_code, info.mac, info.auth_id);
 
         // Pack the message with the payload
-        let packed = cmd.pack_with_payload(&payload, &info.key)
+        let packed = cmd
+            .pack_with_payload(&payload, &info.key)
             .map_err(|e| format!("Could not pack command with payload! {}", e))?;
 
         // Send the message to the device
@@ -172,11 +162,11 @@ impl DeviceTrait for Device {
             Device::Remote { remote } => {
                 remote.info.auth_id = id;
                 remote.info.key = key;
-            },
+            }
             Device::Hvac { hvac } => {
                 hvac.info.auth_id = id;
                 hvac.info.key = key;
-            },
+            }
         };
     }
 }
@@ -192,15 +182,22 @@ impl fmt::Display for Device {
             info.friendly_type,
             info.friendly_model,
             info.address,
-            info.mac.iter().map(|x| format!("{:02X}", x)).collect::<Vec<String>>().join(":"),
+            info.mac
+                .iter()
+                .map(|x| format!("{:02X}", x))
+                .collect::<Vec<String>>()
+                .join(":"),
             info.is_locked,
         )
     }
 }
 
 /// Creates a device from a received network packet.
-fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u8]) -> Result<Device, String>
-{
+fn create_device_from_packet(
+    addr: SocketAddr,
+    bytes_received: usize,
+    bytes: &[u8],
+) -> Result<Device, String> {
     // Make sure that we have the required amount of bytes
     if bytes_received != 128 {
         return Err("Received invalid response! Not enough data.".into());
@@ -209,7 +206,7 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     // Short-circuit if the device is using an IPv6 address (should be impossible)
     let addr_ip = match addr.ip() {
         IpAddr::V4(a) => a,
-        _ => return Err("Device has an IPv6 Address! This should be impossible...".into())
+        _ => return Err("Device has an IPv6 Address! This should be impossible...".into()),
     };
 
     let response = DiscoveryResponse::unpack_from_slice(&bytes)
@@ -222,16 +219,17 @@ fn create_device_from_packet(addr: SocketAddr, bytes_received: usize, bytes: &[u
     // Create the device conditionally based on the model code.
     let mut device = match &response.model_code {
         _ if REMOTE_CODES.contains_key(&response.model_code) => Device::Remote {
-            remote: RemoteDevice::new(name, addr_ip, response)
+            remote: RemoteDevice::new(name, addr_ip, response),
         },
         _ if HVAC_CODES.contains_key(&response.model_code) => Device::Hvac {
-            hvac: HvacDevice::new(name, addr_ip, response)
+            hvac: HvacDevice::new(name, addr_ip, response),
         },
         _ => return Err(format!("Unknown device: {}", response.model_code)),
     };
 
     // Get the auth key for this device
-    device.authenticate()
+    device
+        .authenticate()
         .map_err(|e| format!("Could not authenticate device! {}", e))?;
 
     return Ok(device);

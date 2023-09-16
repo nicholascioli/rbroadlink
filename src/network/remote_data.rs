@@ -1,4 +1,4 @@
-use packed_struct::prelude::{ PackedStruct, PackedStructSlice, PrimitiveEnum_u8 };
+use packed_struct::prelude::{PackedStruct, PackedStructSlice, PrimitiveEnum_u8};
 
 use crate::traits::CommandTrait;
 
@@ -60,12 +60,14 @@ impl RemoteDataMessage {
             .map_err(|e| format!("Payload is too long! {}", e))?;
 
         // Add 4 for the needed stop sequence
-        self.payload_length = self.payload_length
+        self.payload_length = self
+            .payload_length
             .checked_add(4u16)
             .ok_or_else(|| "Could not add the start buffer! Payload is too long")?;
 
         // Append the payload to the header
-        let mut result = self.pack()
+        let mut result = self
+            .pack()
             .map_err(|e| format!("Could not pack message! {}", e))?
             .to_vec();
         result.extend(payload);

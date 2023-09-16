@@ -3,11 +3,7 @@ use std::net::Ipv4Addr;
 use clap::{ArgEnum, Parser, Subcommand};
 use rpassword::read_password_from_tty;
 
-use rbroadlink::{
-    Device,
-
-    network::WirelessConnection,
-};
+use rbroadlink::{network::WirelessConnection, Device};
 
 /// Command line arguments for the CLI
 #[derive(Parser, Debug)]
@@ -96,18 +92,34 @@ enum WirelessConnectionArg {
     WPA,
 }
 
-fn main() -> Result<(), String>{
+fn main() -> Result<(), String> {
     // Get the args
     let args = Args::parse();
 
     // Run the command
     return match args.command {
-        Commands::Blast { local_ip, device_ip, code } => blast(local_ip, device_ip, code),
-        Commands::Connect { security_mode, ssid, password, prompt } => connect(security_mode, ssid, password, prompt),
-        Commands::Learn { local_ip, device_ip, code_type } => learn(local_ip, device_ip, code_type),
+        Commands::Blast {
+            local_ip,
+            device_ip,
+            code,
+        } => blast(local_ip, device_ip, code),
+        Commands::Connect {
+            security_mode,
+            ssid,
+            password,
+            prompt,
+        } => connect(security_mode, ssid, password, prompt),
+        Commands::Learn {
+            local_ip,
+            device_ip,
+            code_type,
+        } => learn(local_ip, device_ip, code_type),
         Commands::List { local_ip } => list(local_ip),
-        Commands::Info { local_ip, device_ip } => info(local_ip, device_ip),
-    }
+        Commands::Info {
+            local_ip,
+            device_ip,
+        } => info(local_ip, device_ip),
+    };
 }
 
 fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code: String) -> Result<(), String> {
@@ -125,16 +137,23 @@ fn blast(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code: String) -> Resul
     return remote.send_code(&hex_code);
 }
 
-fn connect(sec_mode: WirelessConnectionArg, ssid: String, password: Option<String>, prompt: bool) -> Result<(), String> {
+fn connect(
+    sec_mode: WirelessConnectionArg,
+    ssid: String,
+    password: Option<String>,
+    prompt: bool,
+) -> Result<(), String> {
     // Enforce unwrapping the password if using a security mode that requires it.
     let password_prompt = Some("Wireless Password (will not show): ");
     let unwrapped_pass = match sec_mode {
         WirelessConnectionArg::None => "".into(),
-        _ => if prompt {
+        _ => {
+            if prompt {
                 read_password_from_tty(password_prompt).expect("Could not read password!")
             } else {
                 password.expect("This mode requires a password!")
-            },
+            }
+        }
     };
 
     // Construct the connection information
@@ -147,15 +166,21 @@ fn connect(sec_mode: WirelessConnectionArg, ssid: String, password: Option<Strin
     };
 
     // Attempt to have the device connect
-    Device::connect_to_network(&connection)
-        .expect("Could not connect device to network!");
+    Device::connect_to_network(&connection).expect("Could not connect device to network!");
 
-    println!("Sending connection message with the following information: {:?}", connection);
+    println!(
+        "Sending connection message with the following information: {:?}",
+        connection
+    );
 
     return Ok(());
 }
 
-fn learn(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code_type: LearnCodeType) -> Result<(), String> {
+fn learn(
+    local_ip: Option<Ipv4Addr>,
+    device_ip: Ipv4Addr,
+    code_type: LearnCodeType,
+) -> Result<(), String> {
     println!("Attempting to learn a code of type {:?}...", code_type);
 
     // Ensure that the device is a remote
@@ -169,7 +194,8 @@ fn learn(local_ip: Option<Ipv4Addr>, device_ip: Ipv4Addr, code_type: LearnCodeTy
     let code = match code_type {
         LearnCodeType::IR => remote.learn_ir(),
         LearnCodeType::RF => remote.learn_rf(),
-    }.expect("Could not learn code from device!");
+    }
+    .expect("Could not learn code from device!");
 
     let hex_string = hex::encode(&code);
     println!("Got code => {}", hex_string);

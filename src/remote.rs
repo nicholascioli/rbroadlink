@@ -1,24 +1,11 @@
-use std::{
-    net::Ipv4Addr,
-    time::Duration,
-};
+use std::{net::Ipv4Addr, time::Duration};
 
 use phf::phf_map;
 
 use crate::{
-    DeviceInfo,
-    Device,
-
     constants,
-    network::{
-        DiscoveryResponse,
-        RemoteDataCommand,
-        RemoteDataMessage,
-
-        util::{
-            reverse_mac,
-        }
-    },
+    network::{util::reverse_mac, DiscoveryResponse, RemoteDataCommand, RemoteDataMessage},
+    Device, DeviceInfo,
 };
 
 /// A mapping of remote device codes to their friendly model equivalent.
@@ -47,12 +34,13 @@ impl RemoteDevice {
     /// [Device::list] instead.
     pub fn new(name: &str, addr: Ipv4Addr, response: DiscoveryResponse) -> RemoteDevice {
         // Get the type of remote
-        let friendly_model: String = REMOTE_CODES.get(&response.model_code)
+        let friendly_model: String = REMOTE_CODES
+            .get(&response.model_code)
             .unwrap_or(&"Unknown")
             .to_string();
 
-        return Self{
-            info: DeviceInfo{
+        return Self {
+            info: DeviceInfo {
                 address: addr,
                 mac: reverse_mac(response.mac),
                 model_code: response.model_code,
@@ -83,7 +71,8 @@ impl RemoteDevice {
             // Sleep before trying again
             std::thread::sleep(interval);
 
-            let code: Vec<u8> = self.send_command(&[], RemoteDataCommand::GetCode)
+            let code: Vec<u8> = self
+                .send_command(&[], RemoteDataCommand::GetCode)
                 .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if code.len() != 0 {
                 return Ok(code);
@@ -93,7 +82,6 @@ impl RemoteDevice {
         // If we haven't gotten anything up until now, then we failed
         return Err("Could not learn IR code! Operation timed out.".into());
     }
-
 
     /// Attempts to learn an RF code.
     ///
@@ -119,7 +107,8 @@ impl RemoteDevice {
             // Sleep before trying again
             std::thread::sleep(interval);
 
-            let frequency: Vec<u8> = self.send_command(&[], RemoteDataCommand::CheckFrequency)
+            let frequency: Vec<u8> = self
+                .send_command(&[], RemoteDataCommand::CheckFrequency)
                 .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if frequency[0] == 1 {
                 frequency_found = true;
@@ -143,7 +132,8 @@ impl RemoteDevice {
             // Sleep before trying again
             std::thread::sleep(interval);
 
-            let code: Vec<u8> = self.send_command(&[], RemoteDataCommand::GetCode)
+            let code: Vec<u8> = self
+                .send_command(&[], RemoteDataCommand::GetCode)
                 .map_err(|e| format!("Could not check code status of device! {}", e))?;
             if code.len() != 0 {
                 return Ok(code);
@@ -166,17 +156,25 @@ impl RemoteDevice {
 
     /// Sends a raw command to the remote.
     /// Note: Try to avoid using this method in favor of [RemoteDevice::send_code], [RemoteDevice::learn_ir], etc.
-    pub fn send_command(&self, payload: &[u8], command: RemoteDataCommand) -> Result<Vec<u8>, String> {
+    pub fn send_command(
+        &self,
+        payload: &[u8],
+        command: RemoteDataCommand,
+    ) -> Result<Vec<u8>, String> {
         // We cast this object to a generic device in order to make use of the shared
         // helper utilities.
-        let generic_device = Device::Remote{ remote: self.clone() };
+        let generic_device = Device::Remote {
+            remote: self.clone(),
+        };
 
         // Construct the data message
         let msg = RemoteDataMessage::new(command);
-        let packed = msg.pack_with_payload(&payload)
+        let packed = msg
+            .pack_with_payload(&payload)
             .map_err(|e| format!("Could not pack remote data message! {}", e))?;
 
-        let response = generic_device.send_command::<RemoteDataMessage>(&packed)
+        let response = generic_device
+            .send_command::<RemoteDataMessage>(&packed)
             .map_err(|e| format!("Could not send code inside of the command! {}", e))?;
 
         return RemoteDataMessage::unpack_with_payload(&response);

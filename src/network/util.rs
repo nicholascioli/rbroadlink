@@ -1,14 +1,9 @@
 //! Set of utility methods useful when working with network requests.
 
 use std::{
-    net::{
-        IpAddr,
-        Ipv4Addr,
-        SocketAddr,
-        UdpSocket,
-    },
-    time::Duration,
+    net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket},
     slice::ChunksExact,
+    time::Duration,
 };
 
 /// Computes the checksum of a slice of bytes.
@@ -54,7 +49,12 @@ pub fn local_ip_or(ip: Option<Ipv4Addr>) -> Result<IpAddr, String> {
     Ok(match ip {
         Some(ip) => IpAddr::V4(ip),
         None => get_if_addrs::get_if_addrs()
-            .map_err(|e| format!("Could not automatically determine machine IP address. {}", e))?
+            .map_err(|e| {
+                format!(
+                    "Could not automatically determine machine IP address. {}",
+                    e
+                )
+            })?
             .iter()
             .find(|x| x.ip().is_ipv4() && !x.ip().is_loopback())
             .ok_or("Could not find a local IPv4 address!")?
@@ -63,7 +63,11 @@ pub fn local_ip_or(ip: Option<Ipv4Addr>) -> Result<IpAddr, String> {
 }
 
 /// Sends a message and returns the received response.
-fn send_and_receive_impl(msg: &[u8], addr: Ipv4Addr, port: Option<u16>) -> Result<UdpSocket, String> {
+fn send_and_receive_impl(
+    msg: &[u8],
+    addr: Ipv4Addr,
+    port: Option<u16>,
+) -> Result<UdpSocket, String> {
     // Set up the socket addresses
     let unspecified_addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port.unwrap_or(0)));
     let destination_addr = SocketAddr::from((addr, 80));
@@ -72,20 +76,30 @@ fn send_and_receive_impl(msg: &[u8], addr: Ipv4Addr, port: Option<u16>) -> Resul
     // Note: We need to enable support for broadcast
     let socket = UdpSocket::bind(unspecified_addr)
         .map_err(|e| format!("Could not bind to any port. {}", e))?;
-    socket.set_broadcast(true)
+    socket
+        .set_broadcast(true)
         .map_err(|e| format!("Could not enable broadcast. {}", e))?;
 
     // Send the message
-    socket.set_read_timeout(Some(Duration::new(10, 0))).map_err(|e| format!("Could not set read timeout! {}", e))?;
-    socket.send_to(&msg, destination_addr).map_err(|e| format!("Could not broadcast message! {}", e))?;
+    socket
+        .set_read_timeout(Some(Duration::new(10, 0)))
+        .map_err(|e| format!("Could not set read timeout! {}", e))?;
+    socket
+        .send_to(&msg, destination_addr)
+        .map_err(|e| format!("Could not broadcast message! {}", e))?;
 
     return Ok(socket);
 }
 
 /// Sends a message and returns the as many received responses as possible (within a timeout).
-pub fn send_and_receive_many<I, T>(msg: &[u8], addr: Ipv4Addr, port: Option<u16>, cb: T) -> Result<Vec<I>, String>
+pub fn send_and_receive_many<I, T>(
+    msg: &[u8],
+    addr: Ipv4Addr,
+    port: Option<u16>,
+    cb: T,
+) -> Result<Vec<I>, String>
 where
-    T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>
+    T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>,
 {
     // Get the socket
     let socket = send_and_receive_impl(msg, addr, port)
@@ -95,18 +109,21 @@ where
     let mut results: Vec<I> = vec![];
     let mut recv_buffer = [0u8; 8092];
     while let Ok((bytes_received, addr)) = socket.recv_from(&mut recv_buffer) {
-        results.push(
-            cb(bytes_received, &recv_buffer[0..bytes_received], addr)?
-        );
+        results.push(cb(bytes_received, &recv_buffer[0..bytes_received], addr)?);
     }
 
     return Ok(results);
 }
 
 /// Sends a message and returns the first received response.
-pub fn send_and_receive_one<I, T>(msg: &[u8], addr: Ipv4Addr, port: Option<u16>, cb: T) -> Result<I, String>
+pub fn send_and_receive_one<I, T>(
+    msg: &[u8],
+    addr: Ipv4Addr,
+    port: Option<u16>,
+    cb: T,
+) -> Result<I, String>
 where
-    T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>
+    T: Fn(usize, &[u8], SocketAddr) -> Result<I, String>,
 {
     // Get the socket
     let socket = send_and_receive_impl(msg, addr, port)
@@ -115,9 +132,7 @@ where
     // Transform the result
     let mut recv_buffer = [0u8; 8092];
     if let Ok((bytes_received, addr)) = socket.recv_from(&mut recv_buffer) {
-        return Ok(
-            cb(bytes_received, &recv_buffer[0..bytes_received], addr)?
-        );
+        return Ok(cb(bytes_received, &recv_buffer[0..bytes_received], addr)?);
     }
 
     return Err("No response within timeout!".into());

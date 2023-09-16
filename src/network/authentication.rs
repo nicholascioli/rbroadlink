@@ -51,7 +51,7 @@ impl AuthenticationMessage {
             fixed_name[i] = name_bytes[i];
         }
 
-        return AuthenticationMessage{
+        return AuthenticationMessage {
             id: [0x31u8; 16],
             magic0: 0x1,
             magic1: 0x1,

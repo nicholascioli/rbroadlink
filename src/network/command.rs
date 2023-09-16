@@ -1,15 +1,12 @@
 use aes::Aes128;
-use block_modes::{ BlockMode, Cbc };
 use block_modes::block_padding::ZeroPadding;
-use packed_struct::prelude::{ PackedStruct, PackedStructSlice };
+use block_modes::{BlockMode, Cbc};
+use packed_struct::prelude::{PackedStruct, PackedStructSlice};
 use rand::Rng;
 
 use crate::{
     constants,
-    network::util::{
-        checksum,
-        reverse_mac,
-    },
+    network::util::{checksum, reverse_mac},
     traits::CommandTrait,
 };
 
@@ -60,11 +57,16 @@ impl CommandMessage {
     /// Typically, the count of a message is randomly generated using [CommandMessage::new],
     /// but there may be a case where you need to use a specific value for the count, such as when
     /// testing.
-    pub fn with_count<T>(count: u16, device_model_code: u16, mac: [u8; 6], id: u32) -> CommandMessage
+    pub fn with_count<T>(
+        count: u16,
+        device_model_code: u16,
+        mac: [u8; 6],
+        id: u32,
+    ) -> CommandMessage
     where
-        T: CommandTrait
+        T: CommandTrait,
     {
-        return CommandMessage{
+        return CommandMessage {
             magic_header: [0x5A, 0xA5, 0xAA, 0x55, 0x5A, 0xA5, 0xaa, 0x55],
             device_type: device_model_code,
             packet_type: T::packet_type(),
@@ -79,14 +81,13 @@ impl CommandMessage {
     /// Create a new CommandMessage.
     pub fn new<T>(device_model_code: u16, mac: [u8; 6], id: u32) -> CommandMessage
     where
-        T: CommandTrait
+        T: CommandTrait,
     {
         let mut r = rand::thread_rng();
         let random_count = r.gen_range(0x8000..0xFFFF);
 
         return CommandMessage::with_count::<T>(random_count, device_model_code, mac, id);
     }
-
 
     /// Pack the command message while appending the payload.
     pub fn pack_with_payload(mut self, payload: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, String> {
@@ -100,7 +101,8 @@ impl CommandMessage {
         let encrypted = cipher.encrypt_vec(&payload);
 
         // Pack the command with the payload appended
-        let packed = self.pack()
+        let packed = self
+            .pack()
             .map_err(|e| format!("Could not pack command header! {}", e))?;
 
         let mut appended = packed.to_vec();
@@ -110,7 +112,8 @@ impl CommandMessage {
         self.checksum = checksum(&appended);
 
         // Construct the final message
-        let completely_packed = self.pack()
+        let completely_packed = self
+            .pack()
             .map_err(|e| format!("Could not pack completed command! {}", e))?;
 
         let mut complete_command: Vec<u8> = completely_packed.to_vec();
@@ -123,7 +126,10 @@ impl CommandMessage {
     pub fn unpack_with_payload(mut bytes: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, String> {
         // Ensure that the data is correct
         if bytes.len() < 0x38 {
-            return Err(format!("Command is too short! Expected 0x38 bytes, got {}", bytes.len()));
+            return Err(format!(
+                "Command is too short! Expected 0x38 bytes, got {}",
+                bytes.len()
+            ));
         }
 
         // Unpack the header
@@ -140,8 +146,7 @@ impl CommandMessage {
         if command_header.checksum != real_checksum {
             return Err(format!(
                 "Command checksum does not match actual checksum! Expected {} got {}",
-                real_checksum,
-                command_header.checksum,
+                real_checksum, command_header.checksum,
             ));
         }
 
@@ -149,7 +154,8 @@ impl CommandMessage {
         let cipher = AesCbc::new_from_slices(key, &constants::INITIAL_VECTOR)
             .map_err(|e| format!("Could not construct cipher! {}", e))?;
 
-        let decrypted = cipher.decrypt_vec(&bytes[0x38..])
+        let decrypted = cipher
+            .decrypt_vec(&bytes[0x38..])
             .map_err(|e| format!("Could not decrypt command payload! {}", e))?;
 
         // Ensure that the payload checksums match
@@ -157,8 +163,7 @@ impl CommandMessage {
         if command_header.payload_checksum != real_checksum {
             return Err(format!(
                 "Payload checksum does not match actual checksum! Expected {} got {}",
-                real_checksum,
-                command_header.payload_checksum,
+                real_checksum, command_header.payload_checksum,
             ));
         }
 

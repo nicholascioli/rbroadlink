@@ -1,11 +1,9 @@
 use std::net::IpAddr;
 
-use chrono::prelude::{ Datelike, DateTime, Local, Timelike };
+use chrono::prelude::{DateTime, Datelike, Local, Timelike};
 use packed_struct::prelude::PackedStruct;
 
-use crate::{
-    network::util::checksum,
-};
+use crate::network::util::checksum;
 
 /// A message used to discover all broadlink devices on the network.
 #[derive(PackedStruct, Debug)]
@@ -83,7 +81,11 @@ pub struct DiscoveryResponse {
 
 impl DiscoveryMessage {
     /// Create a new DiscoveryMessage.
-    pub fn new(addr: IpAddr, port: u16, time: Option<DateTime<Local>>) -> Result<DiscoveryMessage, String> {
+    pub fn new(
+        addr: IpAddr,
+        port: u16,
+        time: Option<DateTime<Local>>,
+    ) -> Result<DiscoveryMessage, String> {
         // Get the time
         let time = match time {
             Some(t) => t,
@@ -93,7 +95,7 @@ impl DiscoveryMessage {
         // Get the ip addr. Note: The device only supports IPv4
         let selected_ip = match addr {
             IpAddr::V4(ipv4) => ipv4,
-            _ => return Err("Could not construct DiscoveryMessage! IP address is not IPv4".into())
+            _ => return Err("Could not construct DiscoveryMessage! IP address is not IPv4".into()),
         };
 
         // Reverse the IP octet
@@ -108,23 +110,47 @@ impl DiscoveryMessage {
 
         // Calculate the checksum
         msg.checksum = checksum(
-            &msg.pack().map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?
+            &msg.pack()
+                .map_err(|e| format!("Could not pack DiscoveryMessage! {}", e))?,
         );
 
         return Ok(msg);
     }
 }
 
-fn construct_message(reversed_ip: [u8; 4], port: u16, time: DateTime<Local>) -> Result<DiscoveryMessage, String> {
+fn construct_message(
+    reversed_ip: [u8; 4],
+    port: u16,
+    time: DateTime<Local>,
+) -> Result<DiscoveryMessage, String> {
     Ok(DiscoveryMessage {
         gmt_offset: time.offset().local_minus_utc(),
-        year: time.year().try_into().map_err(|e| format!("Year is out of range. {}", e))?,
-        minute: time.minute().try_into().map_err(|e| format!("Minutes are out of range. {}", e))?,
-        hour: time.hour().try_into().map_err(|e| format!("Hour is out of range. {}", e))?,
+        year: time
+            .year()
+            .try_into()
+            .map_err(|e| format!("Year is out of range. {}", e))?,
+        minute: time
+            .minute()
+            .try_into()
+            .map_err(|e| format!("Minutes are out of range. {}", e))?,
+        hour: time
+            .hour()
+            .try_into()
+            .map_err(|e| format!("Hour is out of range. {}", e))?,
         year_without_century: (time.year() % 100) as u8,
-        day_of_the_week: time.weekday().number_from_monday().try_into().map_err(|e| format!("Day of the week is out of range. {}", e))?,
-        day_of_the_month: time.day().try_into().map_err(|e| format!("Day is out of range. {}", e))?,
-        month: time.month().try_into().map_err(|e| format!("Month is out of range. {}", e))?,
+        day_of_the_week: time
+            .weekday()
+            .number_from_monday()
+            .try_into()
+            .map_err(|e| format!("Day of the week is out of range. {}", e))?,
+        day_of_the_month: time
+            .day()
+            .try_into()
+            .map_err(|e| format!("Day is out of range. {}", e))?,
+        month: time
+            .month()
+            .try_into()
+            .map_err(|e| format!("Month is out of range. {}", e))?,
         local_ip_reversed: reversed_ip,
         local_port: port,
 

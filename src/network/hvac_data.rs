@@ -80,7 +80,6 @@ pub struct AirCondState {
     // TODO the following fract field was not tested, commented out now
     // #[packed_field( bits="16")]
     // target_temp_fract: bool,
-
     /// Vertical swing
     #[packed_field(bits = "5..=7", ty = "enum")]
     pub swing_v: HvacSwVert,
