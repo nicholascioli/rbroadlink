@@ -10,7 +10,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         naersk-lib = pkgs.callPackage naersk { };
-        version = "0.3.2";
+        version = "0.4.0";
 
         buildExample = example: naersk-lib.buildPackage {
           inherit version;
