@@ -1,6 +1,6 @@
 [package]
 name = "rbroadlink"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 description = "A library to control broadlink smart devices."
@@ -8,7 +8,7 @@ homepage = "https://github.com/nicholascioli/rbroadlink"
 repository = "https://github.com/nicholascioli/rbroadlink"
 readme = "README.md"
 authors = [
-    "Nicholas Cioli <nicholascioli@gmail.com>",
+    "Nicholas Cioli <nicholascioli@users.noreply.github.com>",
     "Wyatt Lindquist <git.wquist@gmail.com>",
 ]
 

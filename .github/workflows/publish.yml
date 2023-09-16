@@ -1,0 +1,33 @@
+name: "Build rbroadlink and publish to GHCR"
+
+# Have this workflow trigger on new tagged releases starting with v
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to the GHCR docker registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Build the container image
+        run: 'nix build --print-build-logs --verbose --log-format raw --out-link container.img .#container'
+      - name: Convert the generated container image into a docker image
+        run: 'docker load --input container.img'
+      - name: Tag the docker image with the release version
+        run: 'docker image tag ghcr.io/nicholascioli/rbroadlink:latest ghcr.io/nicholascioli/rbroadlink:${{ github.ref_name }}'
+      - name: Upload the tagged images to GHCR
+        run: 'docker push --all-tags ghcr.io/nicholascioli/rbroadlink:latest'
+      - name: Publish to crates.io
+        run: cargo publish --no-verify
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
