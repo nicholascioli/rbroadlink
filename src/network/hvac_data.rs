@@ -70,35 +70,63 @@ pub enum HvacSwVert {
 #[derive(PackedStruct, Debug)]
 #[packed_struct(bit_numbering = "msb0", size_bytes = "13")]
 pub struct AirCondState {
+    /// Power state (on/off)
     #[packed_field(bits = "66")]
     pub power: bool,
+
+    /// Target temperature (integer)
     #[packed_field(bits = "0..=4")]
     target_temp_int: Integer<u8, packed_bits::Bits<5>>,
     // TODO the following fract field was not tested, commented out now
     // #[packed_field( bits="16")]
     // target_temp_fract: bool,
+
+    /// Vertical swing
     #[packed_field(bits = "5..=7", ty = "enum")]
     pub swing_v: HvacSwVert,
+
+    /// Horizontal swing
     #[packed_field(bits = "8..=10", ty = "enum")]
     pub swing_h: HvacSwHoriz,
+
+    /// Device mode (heating, cooling, etc.)
     #[packed_field(bits = "40..=42", ty = "enum")]
     pub mode: HvacMode,
+
+    /// Constant magic value
     #[packed_field(bits = "20..=23")]
     magic1: Integer<u8, packed_bits::Bits<4>>,
+
+    /// Fan speed
     #[packed_field(bits = "24..=26", ty = "enum")]
     pub fanspeed: HvacSpeed,
+
+    /// Preset (normal, turbo, etc.)
     #[packed_field(bits = "38..=39", ty = "enum")]
     pub preset: HvacPreset,
+
+    /// Sleep mode
     #[packed_field(bits = "45")]
     pub sleep: bool,
+
+    /// iFeel function (gets temperature from RCU)
     #[packed_field(bits = "44")]
     pub ifeel: bool,
+
+    /// Health mode (clean the air by removing dust particles)
     #[packed_field(bits = "70")]
     pub health: bool,
+
+    /// Auto-clean function
+    /// prevent the growth of harmful microorganisms by eliminating the moisture inside of the indoor unit
     #[packed_field(bits = "69")]
     pub clean: bool,
+
+    /// Enable/disable display showing current temperature
     #[packed_field(bits = "83")]
     pub display: bool,
+
+    /// Dry mode (removes moisture as a major cause of mould and mildew in rooms)
     #[packed_field(bits = "84")]
     pub mildew: bool,
 }
