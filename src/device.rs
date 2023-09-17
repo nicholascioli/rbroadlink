@@ -224,7 +224,12 @@ fn create_device_from_packet(
         _ if HVAC_CODES.contains_key(&response.model_code) => Device::Hvac {
             hvac: HvacDevice::new(name, addr_ip, response),
         },
-        _ => return Err(format!("Unknown device: {}", response.model_code)),
+        _ => {
+            return Err(format!(
+                "Unknown device: {} ({:#06X})",
+                response.model_code, response.model_code
+            ))
+        }
     };
 
     // Get the auth key for this device
