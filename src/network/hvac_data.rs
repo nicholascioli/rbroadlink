@@ -247,7 +247,7 @@ impl HvacDataMessage {
         let real_size: u16 = (bytes.len() as u16) - 2;
         if real_size != command_header.payload_length {
             return Err(format!(
-                "Command checksum does not match actual checksum! Expected {} got {}",
+                "Command checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 command_header.payload_length, real_size,
             ));
         }
@@ -258,7 +258,7 @@ impl HvacDataMessage {
         let real_checksum = compute_generic_checksum(&bytes[0x02..crc_offset]);
         if data_crc != real_checksum {
             return Err(format!(
-                "Data checksum does not match actual checksum! Expected {} got {}",
+                "Data checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 data_crc, real_checksum,
             ));
         }
