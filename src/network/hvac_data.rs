@@ -135,7 +135,10 @@ impl AirCondState {
         // set magic values before sending
         self.magic1 = 0x0f.into();
 
-        Ok(self.pack().expect("Could not pack message!").to_vec())
+        Ok(self
+            .pack()
+            .map_err(|e| format!("Could not pack message! {}", e))?
+            .to_vec())
     }
 
     /// Calculate final temperature value from internal partial fields.
@@ -216,17 +219,20 @@ impl HvacDataMessage {
     /// Pack the HvacDataMessage with an associated payload.
     pub fn pack_with_payload(mut self, payload: &[u8]) -> Result<Vec<u8>, String> {
         // Calculate tyhe length of the payload
-        self.data_length +=
-            <usize as TryInto<u16>>::try_into(payload.len()).expect("Payload is too long!");
+        self.data_length += <usize as TryInto<u16>>::try_into(payload.len())
+            .map_err(|e| format!("Payload is too long! {}", e))?;
 
         // Add 10 bytes for the header
         self.payload_length = self
             .data_length
             .checked_add(10u16)
-            .expect("Could not add the start buffer! Payload is too long");
+            .ok_or_else(|| "Could not add the start buffer! Payload is too long")?;
 
         // Append the payload to the header
-        let mut result = self.pack().expect("Could not pack message!").to_vec();
+        let mut result = self
+            .pack()
+            .map_err(|e| format!("Could not pack message! {}", e))?
+            .to_vec();
         result.extend(payload);
 
         // Compute and add the final payload checksum
@@ -240,14 +246,14 @@ impl HvacDataMessage {
     pub fn unpack_with_payload(bytes: &[u8]) -> Result<Vec<u8>, String> {
         // Unpack the header
         let command_header = HvacDataMessage::unpack_from_slice(&bytes[0..12])
-            .expect("Could not unpack command from bytes!");
+            .map_err(|e| format!("Could not unpack command from bytes! {}", e))?;
 
         // Check total payload length:
         // get real size and substract 2 bytes length field for correct comparision
         let real_size: u16 = (bytes.len() as u16) - 2;
         if real_size != command_header.payload_length {
             return Err(format!(
-                "Command checksum does not match actual checksum! Expected {} got {}",
+                "Command checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 command_header.payload_length, real_size,
             ));
         }
@@ -258,7 +264,7 @@ impl HvacDataMessage {
         let real_checksum = compute_generic_checksum(&bytes[0x02..crc_offset]);
         if data_crc != real_checksum {
             return Err(format!(
-                "Data checksum does not match actual checksum! Expected {} got {}",
+                "Data checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 data_crc, real_checksum,
             ));
         }

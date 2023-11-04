@@ -145,7 +145,7 @@ impl CommandMessage {
         let real_checksum = checksum(&bytes);
         if command_header.checksum != real_checksum {
             return Err(format!(
-                "Command checksum does not match actual checksum! Expected {} got {}",
+                "Command checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 real_checksum, command_header.checksum,
             ));
         }
@@ -162,7 +162,7 @@ impl CommandMessage {
         let real_checksum = checksum(&decrypted);
         if command_header.payload_checksum != real_checksum {
             return Err(format!(
-                "Payload checksum does not match actual checksum! Expected {} got {}",
+                "Payload checksum does not match actual checksum! Expected {:#06X} got {:#06X}",
                 real_checksum, command_header.payload_checksum,
             ));
         }

@@ -55,9 +55,9 @@ impl HvacDevice {
     pub fn get_info(&self) -> Result<AirCondInfo, String> {
         let data = self
             .send_command(&[], HvacDataCommand::GetAcInfo)
-            .expect("Could not obtain AC info from device!");
-        let info =
-            AirCondInfo::unpack_from_slice(&data).expect("Could not unpack command from bytes!");
+            .map_err(|e| format!("Could not obtain AC info from device! {}", e))?;
+        let info = AirCondInfo::unpack_from_slice(&data)
+            .map_err(|e| format!("Could not unpack command from bytes! {}", e))?;
 
         return Ok(info);
     }
@@ -66,19 +66,19 @@ impl HvacDevice {
     pub fn get_state(&self) -> Result<AirCondState, String> {
         let data = self
             .send_command(&[], HvacDataCommand::GetState)
-            .expect("Could not obtain AC state from device!");
-        let state =
-            AirCondState::unpack_from_slice(&data).expect("Could not unpack command from bytes!");
+            .map_err(|e| format!("Could not obtain AC state from device! {}", e))?;
+        let state = AirCondState::unpack_from_slice(&data)
+            .map_err(|e| format!("Could not unpack command from bytes! {}", e))?;
 
         return Ok(state);
     }
 
     /// Set new air conditioner state based on passed structure.
     pub fn set_state(&self, state: &mut AirCondState) -> Result<Vec<u8>, String> {
-        let payload = state.prepare_and_pack().expect("Could not pack message");
-        let response = self
-            .send_command(&payload, HvacDataCommand::SetState)
-            .unwrap();
+        let payload = state
+            .prepare_and_pack()
+            .map_err(|e| format!("Could not pack message! {}", e))?;
+        let response = self.send_command(&payload, HvacDataCommand::SetState)?;
 
         return Ok(response);
     }
@@ -98,11 +98,11 @@ impl HvacDevice {
         let msg = HvacDataMessage::new(command);
         let packed = msg
             .pack_with_payload(&payload)
-            .expect("Could not pack HVAC data message!");
+            .map_err(|e| format!("Could not pack HVAC data message! {}", e))?;
 
         let response = generic_device
             .send_command::<HvacDataMessage>(&packed)
-            .expect("Could not send command!");
+            .map_err(|e| format!("Could not send command! {}", e))?;
 
         // TODO: check if there is some relation between
         // msg.command and the same return field from the response

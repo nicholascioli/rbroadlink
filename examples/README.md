@@ -98,3 +98,28 @@ mqtt://1.2.3.4:1883 is shown below:
 ```sh
 cargo run --example mqtt-broadlink --features mqtt-broadlink -- -c 10.8.0.1 mqtt://1.2.3.4:1883
 ```
+
+## HVAC client
+
+This library includes an example HVAC/Air Conditioner client to show how to control supported devices.
+
+The source can be found [here](hvac-cli.rs) and its usage is shown below:
+
+```sh
+USAGE:
+    hvac-cli MODE
+
+MODE:
+    info      show air conditioner state
+    on        power ON air conditioner
+    off       power OFF air conditioner
+    toggle    toggle power state
+```
+
+Note: by default this client is autodiscovering all devices and it is trying to issue the command on all discovered devices.
+
+An example of using this client to obtain information of the current state is show below:
+
+```sh
+cargo run --example hvac-cli -- info
+```
